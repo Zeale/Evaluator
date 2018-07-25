@@ -22,7 +22,7 @@ public interface Spate<O> {
 
 			@Override
 			public boolean hasNext() {
-				return pos < sequence.length();
+				return pos + 1 < sequence.length();
 			}
 
 			@Override
