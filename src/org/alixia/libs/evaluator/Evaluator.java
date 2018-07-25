@@ -1,6 +1,8 @@
 package org.alixia.libs.evaluator;
 
+import org.alixia.libs.evaluator.api.NormalOperator;
 import org.alixia.libs.evaluator.api.Spate;
+import org.alixia.libs.evaluator.api.Term;
 
 public class Evaluator<T extends Number> {
 
@@ -10,12 +12,28 @@ public class Evaluator<T extends Number> {
 	private Spate<Character> equation;
 
 	public synchronized double solve(Spate<Character> equation) {
+		// Set the field so that other methods can use it.
 		this.equation = equation;
-		// TODO Check pre-solved value if it exists (or maybe don't; Spate may have
-		// changed).
+
+		// Check to see if the equation is empty.
+		Character c;
+		while (true) {
+
+		}
+
+		Term<?> term = parseTerm();
 		while (equation.hasNext())
-			;
+			parseTerm();//
+		;
 		return 0;
+	}
+
+	private Term<?> parseTerm() {
+
+	}
+
+	private NormalOperator<?, ?, ?> parseOperator() {
+
 	}
 
 }
