@@ -34,8 +34,36 @@ public class Evaluator<T extends Number> {
 	}
 
 	private Term<?> parseTerm() {
-		String numb = "";
+
+		// Check for whitespace.
+		{
+			Character c;
+			while (Character.isWhitespace(box(c = equation.peek())))
+				equation.skip();
+			if (c == null)
+				throw new RuntimeException("The equation ended prematurely; another term was expected.");
+		}
+
 		int c;
+		boolean negate = false;
+
+		while (true) {
+			c = box(equation.next());
+			if (c == '+')
+				negate = false;
+			else if (c == '-')
+				negate ^= true;
+			else if (Character.isWhitespace(c))
+				continue;
+			else if (Character.isDigit(c))
+				break;
+			else if (c == -1)
+				throw new RuntimeException("Expected a term but found the end of the equation.");
+			else
+				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
+		}
+
+		String numb = "";
 
 		// TODO Implement
 		return null;

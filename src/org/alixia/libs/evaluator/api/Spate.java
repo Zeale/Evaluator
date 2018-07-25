@@ -13,11 +13,11 @@ public interface Spate<O> {
 	public static Spate<Character> spate(CharSequence sequence) {
 		return new Spate<Character>() {
 
-			private int pos;
+			private int pos = -1;
 
 			@Override
 			public Character next() {
-				return hasNext() ? sequence.charAt(pos++) : null;
+				return hasNext() ? sequence.charAt(++pos) : null;
 			}
 
 			@Override
