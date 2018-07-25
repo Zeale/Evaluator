@@ -1,12 +1,12 @@
 package org.alixia.libs.evaluator.api;
 
-import java.util.Iterator;
-
 public interface Spate<O> {
 
 	public abstract O next();
 
 	public abstract boolean hasNext();
+
+	public abstract O peek();
 
 	public static Spate<Character> spate(CharSequence sequence) {
 		return new Spate<Character>() {
@@ -22,26 +22,12 @@ public interface Spate<O> {
 			public boolean hasNext() {
 				return pos < sequence.length();
 			}
-		};
-	}
-
-	public static <O> Spate<O> spate(Iterator<O> iterator) {
-		return new Spate<O>() {
 
 			@Override
-			public O next() {
-				return iterator.next();
-			}
-
-			@Override
-			public boolean hasNext() {
-				return iterator.hasNext();
+			public Character peek() {
+				return hasNext() ? sequence.charAt(pos + 1) : null;
 			}
 		};
-	}
-
-	public static <O> Spate<O> spate(Iterable<O> iterable) {
-		return spate(iterable.iterator());
 	}
 
 }
