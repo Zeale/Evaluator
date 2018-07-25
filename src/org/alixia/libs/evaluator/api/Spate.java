@@ -2,11 +2,13 @@ package org.alixia.libs.evaluator.api;
 
 public interface Spate<O> {
 
-	public abstract O next();
+	O next();
 
-	public abstract boolean hasNext();
+	boolean hasNext();
 
-	public abstract O peek();
+	O peek();
+
+	void skip();
 
 	public static Spate<Character> spate(CharSequence sequence) {
 		return new Spate<Character>() {
@@ -26,6 +28,11 @@ public interface Spate<O> {
 			@Override
 			public Character peek() {
 				return hasNext() ? sequence.charAt(pos + 1) : null;
+			}
+
+			@Override
+			public void skip() {
+				pos++;
 			}
 		};
 	}
