@@ -14,6 +14,10 @@ public class Chain<F, S> {
 		}
 	}
 
+	public boolean linked() {
+		return start.next != null;
+	}
+
 	private class Second {
 		private S value;
 		private First next;
