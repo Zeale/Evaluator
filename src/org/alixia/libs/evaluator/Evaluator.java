@@ -104,7 +104,7 @@ public class Evaluator<T extends Number> {
 			return SUBTRACT;
 		else if (c == '*')
 			return MULTIPLY;
-		else if (c == '/' || c == '÷')
+		else if (c == '/' || c == '\u00f7')
 			return DIVIDE;
 		else if (c == '%')
 			return MODULUS;
