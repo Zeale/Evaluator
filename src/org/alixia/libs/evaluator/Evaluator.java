@@ -12,7 +12,7 @@ public class Evaluator<T extends Number> {
 	private Spate<Character> equation;
 
 	public static void main(String[] args) {
-		System.out.println(new Evaluator<>().solve(Spate.spate("14.385")));
+		System.out.println(new Evaluator<>().solve(Spate.spate("   14.385 ")));
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -28,8 +28,11 @@ public class Evaluator<T extends Number> {
 			throw new RuntimeException("Equation has no evaluatable content.");
 
 		Term<?> term = parseTerm();
-		while (equation.hasNext())
+		clearWhitespace(null);
+		while (equation.hasNext()) {
 			term = ((NormalOperator) parseOperator()).evaluate(term, parseTerm());
+			clearWhitespace(null);
+		}
 		return (double) term.evaluate();
 	}
 
