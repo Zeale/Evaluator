@@ -3,6 +3,7 @@ package org.alixia.libs.evaluator;
 import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.Term;
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
 
 public class Evaluator<T extends Number> {
 
@@ -12,7 +13,7 @@ public class Evaluator<T extends Number> {
 	private Spate<Character> equation;
 
 	public static void main(String[] args) {
-		System.out.println(new Evaluator<>().solve(Spate.spate("   14.385 ")));
+		System.out.println(new Evaluator<>().solve(Spate.spate("   14.385 - 13.98+12")));
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -96,6 +97,18 @@ public class Evaluator<T extends Number> {
 
 	private NormalOperator<?, ?, ?> parseOperator() {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
+		int c = equation.next();
+		if (c == '+')
+			return ADD;
+		else if (c == '-')
+			return SUBTRACT;
+		else if (c == '*')
+			return MULTIPLY;
+		else if (c == '/' || c == '÷')
+			return DIVIDE;
+		else if (c == '%')
+			return MODULUS;
+
 		return null;
 	}
 
