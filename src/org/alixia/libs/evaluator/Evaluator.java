@@ -80,11 +80,14 @@ public class Evaluator<T extends Number> {
 				numb += (char) c;
 			} else if (Character.isDigit(c))
 				numb += (char) c;
-			else// If an unexpected char is found, assume end of term. This may be changed
-				// later, but, until then, with the addition of operators later on, this
-				// behavior will remain safe.
+			else {// If an unexpected char is found, assume end of term. This may be changed
+					// later, but, until then, with the addition of operators later on, this
+					// behavior will remain safe.
+				if (numb.charAt(numb.length() - 1) == '.')
+					throw new RuntimeException("Unnecessary decimal found.");
 				return new org.alixia.libs.evaluator.api.terms.Number<Double>(
 						(negate ? -1 : 1) * Double.parseDouble(numb));
+			}
 			equation.skip();// We only go on to the next char
 			// (and move the spate's position over by one) if we are not done parsing this
 			// term. This way, this method complete's with the spate's position right before
