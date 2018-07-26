@@ -39,14 +39,9 @@ public class Evaluator<T extends Number> {
 
 	private Term<?> parseTerm() {
 
-		// Check for whitespace.
-		{
-			Character c;
-			while (Character.isWhitespace(box(c = equation.peek())))
-				equation.skip();
-			if (c == null)
-				throw new RuntimeException("The equation ended prematurely; another term was expected.");
-		}
+		// Check for whitespace. Stop where equation.next() will return the first
+		// non-whitepsace char.
+		clearWhitespace("The equation ended prematurely; another term was expected.");
 
 		int c;
 		boolean negate = false;
@@ -84,7 +79,8 @@ public class Evaluator<T extends Number> {
 			else// If an unexpected char is found, assume end of term. This may be changed
 				// later, but, until then, with the addition of operators later on, this
 				// behavior will remain safe.
-				return new org.alixia.libs.evaluator.api.terms.Number<Double>((negate ? -1 : 1) * Double.parseDouble(numb));
+				return new org.alixia.libs.evaluator.api.terms.Number<Double>(
+						(negate ? -1 : 1) * Double.parseDouble(numb));
 			equation.skip();// We only go on to the next char
 			// (and move the spate's position over by one) if we are not done parsing this
 			// term. This way, this method complete's with the spate's position right before
@@ -96,8 +92,16 @@ public class Evaluator<T extends Number> {
 	}
 
 	private NormalOperator<?, ?, ?> parseOperator() {
-		// TODO Implement
+		clearWhitespace("The equation ended permaturely; an operator was expected.");
 		return null;
+	}
+
+	private void clearWhitespace(String err) {
+		Character c;
+		while (Character.isWhitespace(box(c = equation.peek())))
+			equation.skip();
+		if (err != null && c == null)
+			throw new RuntimeException(err);
 	}
 
 }
