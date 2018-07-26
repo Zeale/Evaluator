@@ -1,4 +1,4 @@
-package org.alixia.libs.evaluator.api;
+package org.alixia.libs.evaluator.api.terms;
 
 public class Number<T extends java.lang.Number> implements Term<T> {
 	private final T value;
