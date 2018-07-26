@@ -23,6 +23,27 @@ public class Chain<F, S> {
 		}
 	}
 
+	public F getF(int position) {
+		return getFirst(position).value;
+	}
+
+	private First getFirst(int position) {
+		First current = start;
+		for (int i = 0; i < position; i++)
+			if (current.next.next == null)
+				throw new IndexOutOfBoundsException();
+			else
+				current = current.next.next;
+		return current;
+	}
+
+	public S getS(int position) {
+		Second current = getFirst(position).next;
+		if (current == null)
+			throw new IndexOutOfBoundsException();
+		else
+			return current.value;
+	}
 
 	public Chain(F first) {
 		start = current = new First(first);
