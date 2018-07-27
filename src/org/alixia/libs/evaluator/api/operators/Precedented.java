@@ -18,16 +18,7 @@ public interface Precedented {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (!(obj instanceof Precedented))
-				return false;
-			Precedence other = (Precedence) obj;
-			if (precedence != other.precedence)
-				return false;
-			return true;
+			return obj != null && obj instanceof Precedence && ((Precedence) obj).precedence == precedence;
 		}
 
 		@Override
