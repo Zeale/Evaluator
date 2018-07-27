@@ -117,8 +117,10 @@ public class Evaluator<T extends Number> {
 			return DIVIDE;
 		else if (c == '%')
 			return MODULUS;
-
-		return null;
+		else if (c == '^')
+			return EXPONENTIATION;
+		else
+			throw new RuntimeException("Could not parse the operator, '" + (char) c + "'");
 	}
 
 	private void clearWhitespace(String err) {
