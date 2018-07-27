@@ -8,6 +8,7 @@ import org.alixia.libs.evaluator.api.Chain;
 import org.alixia.libs.evaluator.api.Chain.Combiner;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.operators.Precedented;
+import org.alixia.libs.evaluator.api.operators.Precedented.Precedence;
 
 public class ChainTerm<T> implements Term<T> {
 
@@ -15,9 +16,9 @@ public class ChainTerm<T> implements Term<T> {
 
 		// TODO Use boxing class to make sure values are unique.
 		// TODO Keep sorted so that values can be binary searched for when adding.
-		private List<Integer> precedences = new ArrayList<>();
+		private List<Precedence> precedences = new ArrayList<>();
 
-		public List<Integer> getPrecedences() {
+		public List<Precedence> getPrecedences() {
 			return Collections.unmodifiableList(precedences);
 		}
 
@@ -29,7 +30,7 @@ public class ChainTerm<T> implements Term<T> {
 		public void append(NormalOperator<T, T, T> second, Term<T> first) {
 			super.append(second, first);
 			if (second instanceof Precedented) {
-				int prec = ((Precedented) second).precedence();
+				Precedence prec = ((Precedented) second).precedence();
 				if (!precedences.contains(prec))
 					precedences.add(prec);
 			}
@@ -59,13 +60,11 @@ public class ChainTerm<T> implements Term<T> {
 	@Override
 	public T evaluate() {
 		// TODO Get more efficient algorithm
-		// TODO Also, give (some) operators a precedence that will determine when they
-		// are evaluated.
 		Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, t);
 
-		List<Integer> precedences = new ArrayList<>(chain.getPrecedences());
+		List<Precedence> precedences = new ArrayList<>(chain.getPrecedences());
 		precedences.sort(Collections.reverseOrder());
-		for (int i : precedences)
+		for (Precedence i : precedences) {
 			for (Chain<Term<T>, NormalOperator<T, T, T>>.ChainIterator iterator = chain.iterator(); iterator
 					.hasNext();) {
 				Chain<Term<T>, NormalOperator<T, T, T>>.Pair pair = iterator.next();
@@ -73,9 +72,11 @@ public class ChainTerm<T> implements Term<T> {
 					break;
 
 				if (pair.getSecond().item instanceof Precedented
-						&& ((Precedented) pair.getSecond().item).precedence() == i)
+						&& ((Precedented) pair.getSecond().item).precedence().equals(i)) {
 					iterator.combine(combiner);
+				}
 			}
+		}
 
 		Term<T> value = chain.getFront();
 		// Take care of non-precedented operators.

@@ -13,7 +13,7 @@ public enum StandardOperators implements NormalOperator<Double, Double, Double>,
 
 	private StandardOperators(BiFunction<Double, Double, Double> function, int precedence) {
 		this.function = function;
-		this.precedence = precedence;
+		this.precedence = new Precedence(precedence);
 	}
 
 	@Override
@@ -21,10 +21,10 @@ public enum StandardOperators implements NormalOperator<Double, Double, Double>,
 		return new Number<Double>(function.apply(first.evaluate(), second.evaluate()));
 	}
 
-	private final int precedence;
+	private final Precedence precedence;
 
 	@Override
-	public int precedence() {
+	public Precedence precedence() {
 		return precedence;
 	}
 

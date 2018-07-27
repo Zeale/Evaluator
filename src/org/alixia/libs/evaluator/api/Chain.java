@@ -40,17 +40,14 @@ public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
 		}
 
 		private void walk() {
-			if (current == null)
-				current = start;
 			previous = current;
-			current = current.next.next;
+			current = current == null ? start : current.next.next;
 		}
 
 		@Override
 		public Pair next() {
 			walk();
-			Pair pair = new Pair(current);
-			return pair;
+			return new Pair(current);
 		}
 
 		@Override
@@ -63,7 +60,7 @@ public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
 
 		public void combine(Combiner<F, F, S, F> combiner) {
 			if (current.next == null)
-				System.out.println(current.value);
+				throw new IndexOutOfBoundsException("Can't combine just the last term of a chain.");
 			F newVal = combiner.combine(current.value, current.next.value, current.next.next.value);
 			current.next.next.value = newVal;
 			remove();
