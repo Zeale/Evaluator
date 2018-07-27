@@ -2,6 +2,7 @@ package org.alixia.libs.evaluator;
 
 import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
+import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
 
@@ -28,13 +29,13 @@ public class Evaluator<T extends Number> {
 		if (c == null)
 			throw new RuntimeException("Equation has no evaluatable content.");
 
-		Term<?> term = parseTerm();
+		ChainTerm<?> parse = new ChainTerm<>(parseTerm());
 		clearWhitespace(null);
 		while (equation.hasNext()) {
-			term = ((NormalOperator) parseOperator()).evaluate(term, parseTerm());
-			clearWhitespace(null);
+			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
+			clearWhitespace(null);// For the while loop.
 		}
-		return (double) term.evaluate();
+		return (double) parse.evaluate();
 	}
 
 	private int box(Character character) {

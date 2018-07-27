@@ -50,6 +50,10 @@ public class Chain<F, S> {
 		else
 			return current.value;
 	}
+	
+	public F getFront() {
+		return start.value;
+	}
 
 	public Chain(F first) {
 		start = current = new First(first);
