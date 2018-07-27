@@ -6,6 +6,8 @@ import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
 
+import java.util.Scanner;
+
 public class Evaluator<T extends Number> {
 
 	private Evaluator() {
@@ -14,7 +16,10 @@ public class Evaluator<T extends Number> {
 	private Spate<Character> equation;
 
 	public static void main(String[] args) {
-		System.out.println(new Evaluator<>().solve(Spate.spate("   14.385 - 13.98+12")));
+		Scanner scanner = new Scanner(System.in);
+		while (scanner.hasNextLine())
+			System.out.println(new Evaluator<>().solve(Spate.spate(scanner.nextLine())));
+		scanner.close();
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
