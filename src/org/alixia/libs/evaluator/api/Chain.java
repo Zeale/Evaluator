@@ -56,6 +56,7 @@ public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
 				start = current.next.next;
 			else
 				previous.next.next = current.next.next;
+				current = previous;
 		}
 
 		public void combine(Combiner<F, F, S, F> combiner) {
