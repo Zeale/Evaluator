@@ -1,8 +1,8 @@
 package org.alixia.libs.evaluator.api.terms;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.alixia.libs.evaluator.api.Chain;
 import org.alixia.libs.evaluator.api.Chain.Combiner;
@@ -14,12 +14,10 @@ public class ChainTerm<T> implements Term<T> {
 
 	private final class MathChain extends Chain<Term<T>, NormalOperator<T, T, T>> {
 
-		// TODO Use boxing class to make sure values are unique.
-		// TODO Keep sorted so that values can be binary searched for when adding.
-		private List<Precedence> precedences = new ArrayList<>();
+		private final Set<Precedence> precedences = new TreeSet<>(Collections.reverseOrder());
 
-		public List<Precedence> getPrecedences() {
-			return Collections.unmodifiableList(precedences);
+		public Set<Precedence> getPrecedences() {
+			return Collections.unmodifiableSet(precedences);
 		}
 
 		public MathChain(Term<T> first) {
@@ -29,11 +27,8 @@ public class ChainTerm<T> implements Term<T> {
 		@Override
 		public void append(NormalOperator<T, T, T> second, Term<T> first) {
 			super.append(second, first);
-			if (second instanceof Precedented) {
-				Precedence prec = ((Precedented) second).precedence();
-				if (!precedences.contains(prec))
-					precedences.add(prec);
-			}
+			if (second instanceof Precedented)
+				precedences.add(((Precedented) second).precedence());
 		}
 
 	}
@@ -62,9 +57,7 @@ public class ChainTerm<T> implements Term<T> {
 		// TODO Get more efficient algorithm
 		Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, t);
 
-		List<Precedence> precedences = new ArrayList<>(chain.getPrecedences());
-		precedences.sort(Collections.reverseOrder());
-		for (Precedence i : precedences) {
+		for (Precedence i : chain.getPrecedences())
 			for (Chain<Term<T>, NormalOperator<T, T, T>>.ChainIterator iterator = chain.iterator(); iterator
 					.hasNext();) {
 				Chain<Term<T>, NormalOperator<T, T, T>>.Pair pair = iterator.next();
@@ -72,12 +65,13 @@ public class ChainTerm<T> implements Term<T> {
 					break;
 
 				if (pair.getSecond().item instanceof Precedented
-						&& ((Precedented) pair.getSecond().item).precedence().equals(i)) {
+						&& ((Precedented) pair.getSecond().item).precedence().equals(i))
 					iterator.combine(combiner);
-				}
+				// System.out.println("COMBINED; NEW CHAIN: " + chain);
 			}
-		}
+		// System.out.println("\n");
 
+		System.out.println(chain);
 		Term<T> value = chain.getFront();
 		// Take care of non-precedented operators.
 		while (chain.linked()) {

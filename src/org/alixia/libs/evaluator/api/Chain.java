@@ -24,6 +24,11 @@ public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
 			return first.next == null ? null : new Box<>(first.next.next.value);
 		}
 
+		@Override
+		public String toString() {
+			return "{" + getFirst().item + ", " + getSecond().item + "}";
+		}
+
 	}
 
 	public interface Combiner<R, F, S, T> {
@@ -54,9 +59,10 @@ public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
 		public void remove() {
 			if (previous == null)
 				start = current.next.next;
-			else
+			else {
 				previous.next.next = current.next.next;
 				current = previous;
+			}
 		}
 
 		public void combine(Combiner<F, F, S, F> combiner) {
@@ -184,7 +190,7 @@ public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
 		First f = start;
 		if (f == null)
 			return "[]";
-		String s = super.toString() + "[[" + f.value;
+		String s = "Chain[[" + f.value;
 		while (f.next != null)
 			s += ", " + f.next.value + "], [" + (f = f.next.next).value + "]";
 		return s + "]";
