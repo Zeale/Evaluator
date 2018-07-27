@@ -61,7 +61,6 @@ public class ChainTerm<T> implements Term<T> {
 		// TODO Get more efficient algorithm
 		// TODO Also, give (some) operators a precedence that will determine when they
 		// are evaluated.
-		Term<T> value = chain.getFront();
 		Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, t);
 
 		List<Integer> precedences = new ArrayList<>(chain.getPrecedences());
@@ -78,6 +77,7 @@ public class ChainTerm<T> implements Term<T> {
 					iterator.combine(combiner);
 			}
 
+		Term<T> value = chain.getFront();
 		// Take care of non-precedented operators.
 		while (chain.linked()) {
 			value = chain.getS(0).evaluate(value, chain.getF(1));
