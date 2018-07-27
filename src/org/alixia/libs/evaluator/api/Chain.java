@@ -1,6 +1,75 @@
 package org.alixia.libs.evaluator.api;
 
-public class Chain<F, S> {
+import java.util.Iterator;
+
+public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
+
+	public final class Pair {
+
+		private final First first;
+
+		private Pair(First first) {
+			this.first = first;
+		}
+
+		public Box<F> getFirst() {
+			return new Box<>(first.value);
+		}
+
+		public Box<S> getSecond() {
+			return first.next == null ? null : new Box<>(first.next.value);
+		}
+
+		public Box<F> getNext() {
+			return first.next == null ? null : new Box<>(first.next.next.value);
+		}
+
+	}
+
+	public interface Combiner<R, F, S, T> {
+		R combine(F f, S s, T t);
+	}
+
+	public final class ChainIterator implements Iterator<Pair> {
+
+		private First current, previous;
+
+		@Override
+		public boolean hasNext() {
+			return current == null || current.next != null;
+		}
+
+		private void walk() {
+			if (current == null)
+				current = start;
+			previous = current;
+			current = current.next.next;
+		}
+
+		@Override
+		public Pair next() {
+			walk();
+			Pair pair = new Pair(current);
+			return pair;
+		}
+
+		@Override
+		public void remove() {
+			if (previous == null)
+				start = current.next.next;
+			else
+				previous.next.next = current.next.next;
+		}
+
+		public void combine(Combiner<F, F, S, F> combiner) {
+			if (current.next == null)
+				System.out.println(current.value);
+			F newVal = combiner.combine(current.value, current.next.value, current.next.next.value);
+			current.next.next.value = newVal;
+			remove();
+		}
+
+	}
 
 	private First start;
 	private First current;
@@ -50,7 +119,7 @@ public class Chain<F, S> {
 		else
 			return current.value;
 	}
-	
+
 	public F getFront() {
 		return start.value;
 	}
@@ -121,6 +190,11 @@ public class Chain<F, S> {
 		while (f.next != null)
 			s += ", " + f.next.value + "], [" + (f = f.next.next).value + "]";
 		return s + "]";
+	}
+
+	@Override
+	public ChainIterator iterator() {
+		return new ChainIterator();
 	}
 
 }
