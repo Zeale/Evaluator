@@ -72,6 +72,19 @@ public class Evaluator<T extends Number> {
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
 				return nest;
+			} else if (Character.isLetter(c) || c == '_') {
+				String functionName = "" + (char) c;
+				equation.skip();// equation is now positioned at first function name char
+				while ((c = equation.peek()) == '_' || Character.isLetterOrDigit(c)) {
+					functionName += (char) c;
+					equation.skip();
+				}
+
+				if (c == '(')
+					;// TODO Parse function
+				else
+					throw new RuntimeException("Variables are not yet supported.");
+
 			} else if (Character.isDigit(c) || c == '.') {
 				String numb = "";
 				boolean encounteredDecimal = false;
