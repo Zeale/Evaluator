@@ -4,6 +4,8 @@ import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
+
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
 
 import java.util.Scanner;
@@ -65,7 +67,12 @@ public class Evaluator<T extends Number> {
 				negate = false;
 			else if (c == '-')
 				negate ^= true;
-			else if (Character.isDigit(c) || c == '.') {
+			else if (c == '(') {
+				ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
+				if (nest == null)
+					throw new RuntimeException("Error while parsing some parentheses' content.");
+				return nest;
+			} else if (Character.isDigit(c) || c == '.') {
 				String numb = "";
 				boolean encounteredDecimal = false;
 				while (true) {
@@ -100,6 +107,40 @@ public class Evaluator<T extends Number> {
 			equation.skip();
 		} // Leaves off before first digit.
 
+	}
+
+	private ChainTerm<?> parseNest(StandardWrapper parentheses) {
+
+		// Should be called when peek() returns an opening parenthesis.
+		int meets = 0;
+		String chain = "";
+		int c;
+
+		// SKIPS ANY CHARACTERS BEFORE MEETING ITS OPENING PARENTHESIS
+		while (true) {
+			c = box(equation.next());
+			if (c == -1)
+				return null;
+			else if (c == parentheses.getOpenner())
+				break;
+		}
+		meets++;
+		while (true) {
+			c = box(equation.peek());
+			if (c == -1)
+				throw new RuntimeException("Equation ends prematurely; a closing '" + parentheses.getCloser()
+						+ "' was expected but was not found.");
+			else if (c == parentheses.getOpenner())
+				meets++;
+			else if (c == parentheses.getCloser())
+				meets--;
+			equation.skip();
+			if (meets == 0)
+				break;
+			chain += (char) c;
+		}
+		System.out.println(chain);
+		return new Evaluator<Double>().chain(Spate.spate(chain));
 	}
 
 	private NormalOperator<?, ?, ?> parseOperator() {
