@@ -4,6 +4,8 @@ import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
+
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
 
 import java.util.Scanner;
@@ -23,7 +25,7 @@ public class Evaluator<T extends Number> {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized double solve(Spate<Character> equation) {
+	public synchronized ChainTerm<?> chain(Spate<Character> equation) {
 		// Set the field so that other methods can use it.
 		this.equation = equation;
 
@@ -40,7 +42,11 @@ public class Evaluator<T extends Number> {
 			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
 			clearWhitespace(null);// For the while loop.
 		}
-		return (double) parse.evaluate();
+		return parse;
+	}
+
+	public synchronized double solve(Spate<Character> equation) {
+		return (double) chain(equation).evaluate();
 	}
 
 	private int box(Character character) {
@@ -55,58 +61,95 @@ public class Evaluator<T extends Number> {
 
 		int c;
 		boolean negate = false;
-
 		while (true) {
 			c = box(equation.peek());
 			if (c == '+')
 				negate = false;
 			else if (c == '-')
 				negate ^= true;
-			else if (Character.isWhitespace(c))
-				;
-			else if (Character.isDigit(c) || c == '.')
-				break;// Break before moving Spate's position to this digit we've found.
-			else if (c == -1)
+			else if (c == '(') {
+				ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
+				if (nest == null)
+					throw new RuntimeException("Error while parsing some parentheses' content.");
+				return nest;
+			} else if (Character.isDigit(c) || c == '.') {
+				String numb = "";
+				boolean encounteredDecimal = false;
+				while (true) {
+					c = box(equation.peek());
+					if (c == '.') {
+						if (encounteredDecimal)
+							throw new RuntimeException("Encountered multiple decimal points in a number.");
+						encounteredDecimal = true;
+						numb += (char) c;
+					} else if (Character.isDigit(c))
+						numb += (char) c;
+					else {// If an unexpected char is found, assume end of term. This may be changed
+							// later, but, until then, with the addition of operators later on, this
+							// behavior will remain safe.
+						if (numb.charAt(numb.length() - 1) == '.')
+							throw new RuntimeException("Unnecessary decimal found.");
+						return new org.alixia.libs.evaluator.api.terms.Number<Double>(
+								(negate ? -1 : 1) * Double.parseDouble(numb));
+					}
+					equation.skip();// We only go on to the next char
+					// (and move the spate's position over by one) if we are not done parsing this
+					// term. This way, this method complete's with the spate's position right before
+					// the next operator's first char. We need to finish one char before the next
+					// thing we need to parse, bc I'm an idiot and I didn't add a "curr()" method to
+					// the Spate class (I didn't want to force some Spates that are built on top of
+					// other APIs to have to cache the current character they are on).
+				}
+			} else if (c == -1)
 				throw new RuntimeException("Expected a term but found the end of the equation.");
-			else
+			else if (!Character.isWhitespace(c))
 				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
 		} // Leaves off before first digit.
 
-		String numb = "";
-		boolean encounteredDecimal = false;
+	}
 
-		// TODO Parse number.
+	private ChainTerm<?> parseNest(StandardWrapper parentheses) {
+
+		// Should be called when peek() returns an opening parenthesis.
+		int meets = 0;
+		String chain = "";
+		int c;
+
+		// SKIPS ANY CHARACTERS BEFORE MEETING ITS OPENING PARENTHESIS
+		while (true) {
+			c = box(equation.next());
+			if (c == -1)
+				return null;
+			else if (c == parentheses.getOpenner())
+				break;
+		}
+		meets++;
 		while (true) {
 			c = box(equation.peek());
-			if (c == '.') {
-				if (encounteredDecimal)
-					throw new RuntimeException("Encountered multiple decimal points in a number.");
-				encounteredDecimal = true;
-				numb += (char) c;
-			} else if (Character.isDigit(c))
-				numb += (char) c;
-			else {// If an unexpected char is found, assume end of term. This may be changed
-					// later, but, until then, with the addition of operators later on, this
-					// behavior will remain safe.
-				if (numb.charAt(numb.length() - 1) == '.')
-					throw new RuntimeException("Unnecessary decimal found.");
-				return new org.alixia.libs.evaluator.api.terms.Number<Double>(
-						(negate ? -1 : 1) * Double.parseDouble(numb));
-			}
-			equation.skip();// We only go on to the next char
-			// (and move the spate's position over by one) if we are not done parsing this
-			// term. This way, this method complete's with the spate's position right before
-			// the next operator's first char. We need to finish one char before the next
-			// thing we need to parse, bc I'm an idiot and I didn't add a "curr()" method to
-			// the Spate class (I didn't want to force some Spates that are built on top of
-			// other APIs to have to cache the current character they are on).
+			if (c == -1)
+				throw new RuntimeException("Equation ends prematurely; a closing '" + parentheses.getCloser()
+						+ "' was expected but was not found.");
+			else if (c == parentheses.getOpenner())
+				meets++;
+			else if (c == parentheses.getCloser())
+				meets--;
+			equation.skip();
+			if (meets == 0)
+				break;
+			chain += (char) c;
 		}
+		return new Evaluator<Double>().chain(Spate.spate(chain));
 	}
 
 	private NormalOperator<?, ?, ?> parseOperator() {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
-		int c = equation.next();
+
+		int c = equation.peek();
+		if (c == '(' || Character.isLetterOrDigit(c) || c == '.' || c == '_')
+			return MULTIPLY;
+
+		equation.skip();
 		if (c == '+')
 			return ADD;
 		else if (c == '-')
