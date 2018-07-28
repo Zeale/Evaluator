@@ -145,7 +145,12 @@ public class Evaluator<T extends Number> {
 
 	private NormalOperator<?, ?, ?> parseOperator() {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
-		int c = equation.next();
+
+		int c = equation.peek();
+		if (c == '(')
+			return MULTIPLY;
+
+		equation.skip();
 		if (c == '+')
 			return ADD;
 		else if (c == '-')
