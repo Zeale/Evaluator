@@ -21,26 +21,30 @@ public class Evaluator<T extends Number> {
 			System.out.println(new Evaluator<>().solve(Spate.spate(scanner.nextLine())));
 		scanner.close();
 	}
-
+	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized double solve(Spate<Character> equation) {
+	public synchronized ChainTerm<?> chain(Spate<Character>equation) {
 		// Set the field so that other methods can use it.
-		this.equation = equation;
+				this.equation = equation;
 
-		// Check to see if the equation is empty.
-		Character c;
-		while (Character.isWhitespace(box(c = equation.peek())))
-			equation.skip();
-		if (c == null)
-			throw new RuntimeException("Equation has no evaluatable content.");
+				// Check to see if the equation is empty.
+				Character c;
+				while (Character.isWhitespace(box(c = equation.peek())))
+					equation.skip();
+				if (c == null)
+					throw new RuntimeException("Equation has no evaluatable content.");
 
-		ChainTerm<?> parse = new ChainTerm<>(parseTerm());
-		clearWhitespace(null);
-		while (equation.hasNext()) {
-			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
-			clearWhitespace(null);// For the while loop.
-		}
-		return (double) parse.evaluate();
+				ChainTerm<?> parse = new ChainTerm<>(parseTerm());
+				clearWhitespace(null);
+				while (equation.hasNext()) {
+					parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
+					clearWhitespace(null);// For the while loop.
+				}
+				return parse;
+	}
+
+	public synchronized double solve(Spate<Character> equation) {
+		return (double) chain(equation).evaluate();
 	}
 
 	private int box(Character character) {

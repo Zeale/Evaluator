@@ -71,7 +71,7 @@ public class ChainTerm<T> implements Term<T> {
 			}
 		// System.out.println("\n");
 
-		System.out.println(chain);
+		// System.out.println(chain);
 		Term<T> value = chain.getFront();
 		// Take care of non-precedented operators.
 		while (chain.linked()) {
