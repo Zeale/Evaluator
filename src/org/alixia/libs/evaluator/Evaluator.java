@@ -139,7 +139,6 @@ public class Evaluator<T extends Number> {
 				break;
 			chain += (char) c;
 		}
-		System.out.println(chain);
 		return new Evaluator<Double>().chain(Spate.spate(chain));
 	}
 
@@ -147,7 +146,7 @@ public class Evaluator<T extends Number> {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
 
 		int c = equation.peek();
-		if (c == '(')
+		if (c == '(' || Character.isLetterOrDigit(c) || c == '.' || c == '_')
 			return MULTIPLY;
 
 		equation.skip();
