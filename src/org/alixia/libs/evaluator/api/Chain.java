@@ -39,37 +39,44 @@ public class Chain<F, S> implements Iterable<Chain<F, S>.Pair> {
 
 		private First current, previous;
 
+		private boolean walked;
+
 		@Override
 		public boolean hasNext() {
 			return current == null || current.next != null;
 		}
 
 		private void walk() {
+			if (walked) {
+				walked = false;
+				return;
+			}
 			previous = current;
 			current = current == null ? start : current.next.next;
 		}
 
 		@Override
 		public Pair next() {
+			assert previous == null || previous.next.next == current;
 			walk();
 			return new Pair(current);
 		}
 
 		@Override
 		public void remove() {
-			if (previous == null)
-				start = current.next.next;
-			else {
+			walked = true;
+			if (previous == null) {
+				start = current = current.next.next;
+			} else {
 				previous.next.next = current.next.next;
-				current = previous;
+				current = current.next.next;
 			}
 		}
 
 		public void combine(Combiner<F, F, S, F> combiner) {
 			if (current.next == null)
 				throw new IndexOutOfBoundsException("Can't combine just the last term of a chain.");
-			F newVal = combiner.combine(current.value, current.next.value, current.next.next.value);
-			current.next.next.value = newVal;
+			current.next.next.value = combiner.combine(current.value, current.next.value, current.next.next.value);
 			remove();
 		}
 
