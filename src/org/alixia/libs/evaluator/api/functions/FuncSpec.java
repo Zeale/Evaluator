@@ -14,6 +14,4 @@ public @interface FuncSpec {
 	String name() default "";
 
 	boolean ignoreCase() default false;
-
-	boolean variadic() default false;
 }

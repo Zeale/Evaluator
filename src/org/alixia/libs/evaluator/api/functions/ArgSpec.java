@@ -13,4 +13,6 @@ public @Documented @interface ArgSpec {
 	boolean necessary() default true;
 
 	Class<?> validInputs() default void.class;
+
+	boolean variadic() default false;
 }
