@@ -174,9 +174,10 @@ public class Evaluator<T extends java.lang.Number> {
 			else if (c == parentheses.getCloser())
 				meets--;
 			equation.skip();
-			if (meets == 0)
+			if (meets == 0) {
+				args.add(arg);
 				break;
-			else if (meets == 1 && c == ',') {
+			} else if (meets == 1 && c == ',') {
 				args.add(arg.trim());
 				arg = "";
 				continue;

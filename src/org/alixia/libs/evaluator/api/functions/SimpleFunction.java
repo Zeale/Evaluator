@@ -71,7 +71,6 @@ public class SimpleFunction<I, R> {
 		wrapperFunction = SimpleFunction::wrap;
 		for (String s : aliases)
 			this.aliases.add(new Alias(s, true));
-		System.out.println(this.aliases);
 	}
 
 	public SimpleFunction(Function<I, R> function, Function<R, Term<R>> wrapperFunction, Alias... aliases) {
