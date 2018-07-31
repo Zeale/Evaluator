@@ -10,8 +10,13 @@ public class SimpleFunction<I, R> {
 
 	private static final List<SimpleFunction<?, ?>> functions = new ArrayList<>(1);
 
-	public static final SimpleFunction<Double, Double> squareRoot = new SimpleFunction<>(Math::sqrt, "sqrt",
-			"square_root");
+	public static final SimpleFunction<Double, Double> SQUARE_ROOT = new SimpleFunction<>(Math::sqrt, "sqrt",
+			"square_root"), SINE = new SimpleFunction<>(Math::sin, "sin", "sine"),
+			COSINE = new SimpleFunction<>(Math::cos, "cos", "cosin", "cosine"),
+			TANGENT = new SimpleFunction<>(Math::tan, "tan", "tangent"),
+			CUBE_ROOT = new SimpleFunction<>(Math::cbrt, "cbrt", "cube_root"),
+			CEIL = new SimpleFunction<>(Math::ceil, "ceil"), FLOOR = new SimpleFunction<>(Math::floor, "floor");
+	public static final SimpleFunction<Double, Long> ROUND = new SimpleFunction<>(Math::round, "round");
 
 	public final static class Alias {
 		private final String name;
