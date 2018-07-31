@@ -33,6 +33,11 @@ public class SimpleFunction<I, R> {
 			this.ignoreCase = ignoreCase;
 		}
 
+		@Override
+		public String toString() {
+			return "Alias::" + name;
+		}
+
 	}
 
 	public static SimpleFunction<?, ?> getFunction(String name) {
@@ -57,11 +62,16 @@ public class SimpleFunction<I, R> {
 			this.aliases.add(a);
 	}
 
+	{
+		functions.add(this);
+	}
+
 	public SimpleFunction(Function<I, R> function, String... aliases) {
 		this.function = function;
 		wrapperFunction = SimpleFunction::wrap;
 		for (String s : aliases)
 			this.aliases.add(new Alias(s, true));
+		System.out.println(this.aliases);
 	}
 
 	public SimpleFunction(Function<I, R> function, Function<R, Term<R>> wrapperFunction, Alias... aliases) {

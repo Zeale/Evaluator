@@ -1,6 +1,7 @@
 package org.alixia.libs.evaluator;
 
 import org.alixia.libs.evaluator.api.Spate;
+import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
@@ -56,6 +57,7 @@ public class Evaluator<T extends java.lang.Number> {
 		return character == null ? -1 : character;
 	}
 
+	@SuppressWarnings("unchecked")
 	private Term<?> parseTerm() {
 
 		// Check for whitespace. Stop where equation.next() will return the first
@@ -85,8 +87,26 @@ public class Evaluator<T extends java.lang.Number> {
 
 				// TODO Match name against name database to determine if it's a function or
 				// variable.
-				if (c == '(')
-					;// TODO Parse function
+
+				// Functions have a higher precedence than vars; if there is a name conflict, a
+				// the name will be parsed as the function rather than a variable, unless the
+				// "function::functionName" specifying syntax is used, or a tilde is used to
+				// force variable treatment.
+				if (c == '[' || c == '(') {
+					@SuppressWarnings("rawtypes")
+					SimpleFunction function = SimpleFunction.getFunction(name);
+					List<String> args = parseFunctionArgs(StandardWrapper.openValueOf((char) c));
+					if (function == null)
+						throw new RuntimeException("Invalid function name: " + name
+								+ "; couldn't find a function with the specified name.");
+					else if (args.isEmpty())
+						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
+					else if (args.size() > 1)
+						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
+					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
+				}
+
+				// TODO Parse function
 				else
 					throw new RuntimeException("Variables are not yet supported.");
 
@@ -131,7 +151,6 @@ public class Evaluator<T extends java.lang.Number> {
 		// When called, peek() should return an opening parenthesis.
 
 		int meets = 0;
-
 		int c;
 
 		while (true) {
