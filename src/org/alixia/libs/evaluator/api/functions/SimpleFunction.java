@@ -8,34 +8,24 @@ import org.alixia.libs.evaluator.api.terms.Term;
 
 public class SimpleFunction<I, R> {
 
-	private static final List<SimpleFunction<?, ?>> functions = new ArrayList<>(1);
-
-	public static final SimpleFunction<Double, Double> SQUARE_ROOT = new SimpleFunction<>(Math::sqrt, "sqrt",
-			"square_root"), SINE = new SimpleFunction<>(Math::sin, "sin", "sine"),
-			COSINE = new SimpleFunction<>(Math::cos, "cos", "cosin", "cosine"),
-			TANGENT = new SimpleFunction<>(Math::tan, "tan", "tangent"),
-			CUBE_ROOT = new SimpleFunction<>(Math::cbrt, "cbrt", "cube_root"),
-			CEIL = new SimpleFunction<>(Math::ceil, "ceil"), FLOOR = new SimpleFunction<>(Math::floor, "floor");
-	public static final SimpleFunction<Double, Long> ROUND = new SimpleFunction<>(Math::round, "round");
-
 	public final static class Alias {
 		private final String name;
 		private final boolean ignoreCase;
 
-		@Override
-		public boolean equals(Object obj) {
-			if (!(obj instanceof Alias))
-				return false;
-			Alias als = (Alias) obj;
-			return ignoreCase || als.ignoreCase ? name.equalsIgnoreCase(als.name) : name.equals(als.name);
-		}
-
-		public Alias(String name, boolean ignoreCase) {
+		public Alias(String name, final boolean ignoreCase) {
 			name = name.replaceAll("-", "_").replaceAll(" ", "_");
 			while (name.contains("__"))
 				name.replaceAll("__", "_");
 			this.name = name;
 			this.ignoreCase = ignoreCase;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (!(obj instanceof Alias))
+				return false;
+			final Alias als = (Alias) obj;
+			return ignoreCase || als.ignoreCase ? name.equalsIgnoreCase(als.name) : name.equals(als.name);
 		}
 
 		@Override
@@ -45,50 +35,62 @@ public class SimpleFunction<I, R> {
 
 	}
 
-	public static SimpleFunction<?, ?> getFunction(String name) {
-		Alias als = new Alias(name, false);
-		for (SimpleFunction<?, ?> sf : functions)
-			for (Alias a : sf.aliases)
+	private static final List<SimpleFunction<?, ?>> functions = new ArrayList<>(1);
+	public static final SimpleFunction<Double, Double> SQUARE_ROOT = new SimpleFunction<>(Math::sqrt, "sqrt",
+			"square_root"), SINE = new SimpleFunction<>(Math::sin, "sin", "sine"),
+			COSINE = new SimpleFunction<>(Math::cos, "cos", "cosin", "cosine"),
+			TANGENT = new SimpleFunction<>(Math::tan, "tan", "tangent"),
+			CUBE_ROOT = new SimpleFunction<>(Math::cbrt, "cbrt", "cube_root"),
+			CEIL = new SimpleFunction<>(Math::ceil, "ceil"), FLOOR = new SimpleFunction<>(Math::floor, "floor");
+
+	public static final SimpleFunction<Double, Long> ROUND = new SimpleFunction<>(Math::round, "round");
+
+	public static SimpleFunction<?, ?> getFunction(final String name) {
+		final Alias als = new Alias(name, false);
+		for (final SimpleFunction<?, ?> sf : functions)
+			for (final Alias a : sf.aliases)
 				if (a.equals(als))
 					return sf;
 		return null;
 	}
 
-	private final List<Alias> aliases = new ArrayList<>();
-
-	private static final <DT> Term<DT> wrap(DT data) {
+	private static final <DT> Term<DT> wrap(final DT data) {
 		return () -> data;
 	}
 
-	public SimpleFunction(Function<I, R> function, Alias... aliases) {
-		this.function = function;
-		wrapperFunction = SimpleFunction::wrap;
-		for (Alias a : aliases)
-			this.aliases.add(a);
-	}
+	private final List<Alias> aliases = new ArrayList<>();
 
 	{
 		functions.add(this);
 	}
 
-	public SimpleFunction(Function<I, R> function, String... aliases) {
+	private final Function<I, R> function;
+
+	private final Function<R, Term<R>> wrapperFunction;
+
+	public SimpleFunction(final Function<I, R> function, final Alias... aliases) {
 		this.function = function;
 		wrapperFunction = SimpleFunction::wrap;
-		for (String s : aliases)
-			this.aliases.add(new Alias(s, true));
-	}
-
-	public SimpleFunction(Function<I, R> function, Function<R, Term<R>> wrapperFunction, Alias... aliases) {
-		this.function = function;
-		this.wrapperFunction = wrapperFunction;
-		for (Alias a : aliases)
+		for (final Alias a : aliases)
 			this.aliases.add(a);
 	}
 
-	private final Function<I, R> function;
-	private final Function<R, Term<R>> wrapperFunction;
+	public SimpleFunction(final Function<I, R> function, final Function<R, Term<R>> wrapperFunction,
+			final Alias... aliases) {
+		this.function = function;
+		this.wrapperFunction = wrapperFunction;
+		for (final Alias a : aliases)
+			this.aliases.add(a);
+	}
 
-	public Term<R> evaluate(I input) {
+	public SimpleFunction(final Function<I, R> function, final String... aliases) {
+		this.function = function;
+		wrapperFunction = SimpleFunction::wrap;
+		for (final String s : aliases)
+			this.aliases.add(new Alias(s, true));
+	}
+
+	public Term<R> evaluate(final I input) {
 		return wrapperFunction.apply(function.apply(input));
 	}
 

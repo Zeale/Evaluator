@@ -1,35 +1,43 @@
 package org.alixia.libs.evaluator;
 
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.ADD;
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.DIVIDE;
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.EXPONENTIATION;
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.MODULUS;
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.MULTIPLY;
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.SUBTRACT;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Scanner;
+
 import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
-import org.alixia.libs.evaluator.api.terms.Number;
-
-import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
-
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
 
 public class Evaluator<T extends java.lang.Number> {
 
-	private Evaluator() {
-	}
-
-	private Spate<Character> equation;
-
-	public static void main(String[] args) {
-		Scanner scanner = new Scanner(System.in);
+	public static void main(final String[] args) {
+		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
 			System.out.println(new Evaluator<>().solve(Spate.spate(scanner.nextLine())));
 		scanner.close();
 	}
 
+	private Spate<Character> equation;
+
+	private Evaluator() {
+	}
+
+	private int box(final Character character) {
+		return character == null ? -1 : character;
+	}
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized ChainTerm<?> chain(Spate<Character> equation) {
+	public synchronized ChainTerm<?> chain(final Spate<Character> equation) {
 		// Set the field so that other methods can use it.
 		this.equation = equation;
 
@@ -40,7 +48,7 @@ public class Evaluator<T extends java.lang.Number> {
 		if (c == null)
 			throw new RuntimeException("Equation has no evaluatable content.");
 
-		ChainTerm<?> parse = new ChainTerm<>(parseTerm());
+		final ChainTerm<?> parse = new ChainTerm<>(parseTerm());
 		clearWhitespace(null);
 		while (equation.hasNext()) {
 			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
@@ -49,105 +57,15 @@ public class Evaluator<T extends java.lang.Number> {
 		return parse;
 	}
 
-	public synchronized double solve(Spate<Character> equation) {
-		return (double) chain(equation).evaluate();
-	}
-
-	private int box(Character character) {
-		return character == null ? -1 : character;
-	}
-
-	@SuppressWarnings("unchecked")
-	private Term<?> parseTerm() {
-
-		// Check for whitespace. Stop where equation.next() will return the first
-		// non-whitepsace char.
-		clearWhitespace("The equation ended prematurely; another term was expected.");
-
-		int c;
-		boolean negate = false;
-		while (true) {
-			c = box(equation.peek());
-			if (c == '+')
-				negate = false;
-			else if (c == '-')
-				negate ^= true;
-			else if (c == '(') {
-				ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
-				if (nest == null)
-					throw new RuntimeException("Error while parsing some parentheses' content.");
-				return nest;
-			} else if (Character.isLetter(c) || c == '_') {
-				String name = "" + (char) c;
-				equation.skip();// equation is now positioned at first function name char
-				while ((c = equation.peek()) == '_' || Character.isLetterOrDigit(c)) {
-					name += (char) c;
-					equation.skip();
-				}
-
-				// TODO Match name against name database to determine if it's a function or
-				// variable.
-
-				// Functions have a higher precedence than vars; if there is a name conflict, a
-				// the name will be parsed as the function rather than a variable, unless the
-				// "function::functionName" specifying syntax is used, or a tilde is used to
-				// force variable treatment.
-				if (c == '[' || c == '(') {
-					@SuppressWarnings("rawtypes")
-					SimpleFunction function = SimpleFunction.getFunction(name);
-					List<String> args = parseFunctionArgs(StandardWrapper.openValueOf((char) c));
-					if (function == null)
-						throw new RuntimeException("Invalid function name: " + name
-								+ "; couldn't find a function with the specified name.");
-					else if (args.isEmpty())
-						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
-					else if (args.size() > 1)
-						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
-				}
-
-				// TODO Parse function
-				else
-					throw new RuntimeException("Variables are not yet supported.");
-
-			} else if (Character.isDigit(c) || c == '.') {
-				String numb = "";
-				boolean encounteredDecimal = false;
-				while (true) {
-					c = box(equation.peek());
-					if (c == '.') {
-						if (encounteredDecimal)
-							throw new RuntimeException("Encountered multiple decimal points in a number.");
-						encounteredDecimal = true;
-						numb += (char) c;
-					} else if (Character.isDigit(c))
-						numb += (char) c;
-					else {// If an unexpected char is found, assume end of term. This may be changed
-							// later, but, until then, with the addition of operators later on, this
-							// behavior will remain safe.
-						if (numb.charAt(numb.length() - 1) == '.')
-							throw new RuntimeException("Unnecessary decimal found.");
-						return new org.alixia.libs.evaluator.api.terms.Number<Double>(
-								(negate ? -1 : 1) * Double.parseDouble(numb));
-					}
-					equation.skip();// We only go on to the next char
-					// (and move the spate's position over by one) if we are not done parsing this
-					// term. This way, this method complete's with the spate's position right before
-					// the next operator's first char. We need to finish one char before the next
-					// thing we need to parse, bc I'm an idiot and I didn't add a "curr()" method to
-					// the Spate class (I didn't want to force some Spates that are built on top of
-					// other APIs to have to cache the current character they are on).
-				}
-			} else if (c == -1)
-				throw new RuntimeException("Expected a term but found the end of the equation.");
-			else if (!Character.isWhitespace(c))
-				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
+	private void clearWhitespace(final String err) {
+		Character c;
+		while (Character.isWhitespace(box(c = equation.peek())))
 			equation.skip();
-		} // Leaves off before first digit.
-
+		if (err != null && c == null)
+			throw new RuntimeException(err);
 	}
 
-	private List<String> parseFunctionArgs(StandardWrapper parentheses) {
+	private List<String> parseFunctionArgs(final StandardWrapper parentheses) {
 		// When called, peek() should return an opening parenthesis.
 
 		int meets = 0;
@@ -162,7 +80,7 @@ public class Evaluator<T extends java.lang.Number> {
 		}
 		meets++;
 
-		List<String> args = new LinkedList<>();
+		final List<String> args = new LinkedList<>();
 		String arg = "";
 		while (true) {
 			c = box(equation.peek());
@@ -188,7 +106,7 @@ public class Evaluator<T extends java.lang.Number> {
 		return args;
 	}
 
-	private ChainTerm<?> parseNest(StandardWrapper parentheses) {
+	private ChainTerm<?> parseNest(final StandardWrapper parentheses) {
 
 		// Should be called when peek() returns an opening parenthesis.
 		int meets = 0;
@@ -224,7 +142,7 @@ public class Evaluator<T extends java.lang.Number> {
 	private NormalOperator<?, ?, ?> parseOperator() {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
 
-		int c = equation.peek();
+		final int c = equation.peek();
 		if (c == '(' || Character.isLetterOrDigit(c) || c == '.' || c == '_')
 			return MULTIPLY;
 
@@ -245,12 +163,98 @@ public class Evaluator<T extends java.lang.Number> {
 			throw new RuntimeException("Could not parse the operator, '" + (char) c + "'");
 	}
 
-	private void clearWhitespace(String err) {
-		Character c;
-		while (Character.isWhitespace(box(c = equation.peek())))
+	@SuppressWarnings("unchecked")
+	private Term<?> parseTerm() {
+
+		// Check for whitespace. Stop where equation.next() will return the first
+		// non-whitepsace char.
+		clearWhitespace("The equation ended prematurely; another term was expected.");
+
+		int c;
+		boolean negate = false;
+		while (true) {
+			c = box(equation.peek());
+			if (c == '+')
+				negate = false;
+			else if (c == '-')
+				negate ^= true;
+			else if (c == '(') {
+				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
+				if (nest == null)
+					throw new RuntimeException("Error while parsing some parentheses' content.");
+				return nest;
+			} else if (Character.isLetter(c) || c == '_') {
+				String name = "" + (char) c;
+				equation.skip();// equation is now positioned at first function name char
+				while ((c = equation.peek()) == '_' || Character.isLetterOrDigit(c)) {
+					name += (char) c;
+					equation.skip();
+				}
+
+				// TODO Match name against name database to determine if it's a function or
+				// variable.
+
+				// Functions have a higher precedence than vars; if there is a name conflict, a
+				// the name will be parsed as the function rather than a variable, unless the
+				// "function::functionName" specifying syntax is used, or a tilde is used to
+				// force variable treatment.
+				if (c == '[' || c == '(') {
+					@SuppressWarnings("rawtypes")
+					final SimpleFunction function = SimpleFunction.getFunction(name);
+					final List<String> args = parseFunctionArgs(StandardWrapper.openValueOf((char) c));
+					if (function == null)
+						throw new RuntimeException("Invalid function name: " + name
+								+ "; couldn't find a function with the specified name.");
+					else if (args.isEmpty())
+						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
+					else if (args.size() > 1)
+						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
+					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
+				}
+
+				// TODO Parse function
+				else
+					throw new RuntimeException("Variables are not yet supported.");
+
+			} else if (Character.isDigit(c) || c == '.') {
+				String numb = "";
+				boolean encounteredDecimal = false;
+				while (true) {
+					c = box(equation.peek());
+					if (c == '.') {
+						if (encounteredDecimal)
+							throw new RuntimeException("Encountered multiple decimal points in a number.");
+						encounteredDecimal = true;
+						numb += (char) c;
+					} else if (Character.isDigit(c))
+						numb += (char) c;
+					else {// If an unexpected char is found, assume end of term. This may be changed
+							// later, but, until then, with the addition of operators later on, this
+							// behavior will remain safe.
+						if (numb.charAt(numb.length() - 1) == '.')
+							throw new RuntimeException("Unnecessary decimal found.");
+						return new org.alixia.libs.evaluator.api.terms.Number<>(
+								(negate ? -1 : 1) * Double.parseDouble(numb));
+					}
+					equation.skip();// We only go on to the next char
+					// (and move the spate's position over by one) if we are not done parsing this
+					// term. This way, this method complete's with the spate's position right before
+					// the next operator's first char. We need to finish one char before the next
+					// thing we need to parse, bc I'm an idiot and I didn't add a "curr()" method to
+					// the Spate class (I didn't want to force some Spates that are built on top of
+					// other APIs to have to cache the current character they are on).
+				}
+			} else if (c == -1)
+				throw new RuntimeException("Expected a term but found the end of the equation.");
+			else if (!Character.isWhitespace(c))
+				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
-		if (err != null && c == null)
-			throw new RuntimeException(err);
+		} // Leaves off before first digit.
+
+	}
+
+	public synchronized double solve(final Spate<Character> equation) {
+		return (double) chain(equation).evaluate();
 	}
 
 }

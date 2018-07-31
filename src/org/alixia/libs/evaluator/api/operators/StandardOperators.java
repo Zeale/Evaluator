@@ -11,17 +11,17 @@ public enum StandardOperators implements NormalOperator<Double, Double, Double>,
 
 	private final BiFunction<Double, Double, Double> function;
 
-	private StandardOperators(BiFunction<Double, Double, Double> function, int precedence) {
+	private final Precedence precedence;
+
+	private StandardOperators(final BiFunction<Double, Double, Double> function, final int precedence) {
 		this.function = function;
 		this.precedence = new Precedence(precedence);
 	}
 
 	@Override
-	public Term<Double> evaluate(Term<Double> first, Term<Double> second) {
-		return new Number<Double>(function.apply(first.evaluate(), second.evaluate()));
+	public Term<Double> evaluate(final Term<Double> first, final Term<Double> second) {
+		return new Number<>(function.apply(first.evaluate(), second.evaluate()));
 	}
-
-	private final Precedence precedence;
 
 	@Override
 	public Precedence precedence() {

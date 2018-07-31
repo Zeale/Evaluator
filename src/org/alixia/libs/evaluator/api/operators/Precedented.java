@@ -4,8 +4,18 @@ public interface Precedented {
 	public final class Precedence implements Comparable<Precedence> {
 		private final int precedence;
 
-		public Precedence(int precedence) {
+		public Precedence(final int precedence) {
 			this.precedence = precedence;
+		}
+
+		@Override
+		public int compareTo(final Precedence o) {
+			return ((Integer) precedence).compareTo(o.precedence);
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			return obj != null && obj instanceof Precedence && ((Precedence) obj).precedence == precedence;
 		}
 
 		@Override
@@ -14,16 +24,6 @@ public interface Precedented {
 			int result = 1;
 			result = prime * result + precedence;
 			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			return obj != null && obj instanceof Precedence && ((Precedence) obj).precedence == precedence;
-		}
-
-		@Override
-		public int compareTo(Precedence o) {
-			return ((Integer) precedence).compareTo(o.precedence);
 		}
 
 		@Override

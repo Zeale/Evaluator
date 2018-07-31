@@ -16,51 +16,46 @@ public class ChainTerm<T> implements Term<T> {
 
 		private final Set<Precedence> precedences = new TreeSet<>(Collections.reverseOrder());
 
-		public Set<Precedence> getPrecedences() {
-			return Collections.unmodifiableSet(precedences);
-		}
-
-		public MathChain(Term<T> first) {
+		public MathChain(final Term<T> first) {
 			super(first);
 		}
 
 		@Override
-		public void append(NormalOperator<T, T, T> second, Term<T> first) {
+		public void append(final NormalOperator<T, T, T> second, final Term<T> first) {
 			super.append(second, first);
 			if (second instanceof Precedented)
 				precedences.add(((Precedented) second).precedence());
+		}
+
+		public Set<Precedence> getPrecedences() {
+			return Collections.unmodifiableSet(precedences);
 		}
 
 	}
 
 	private final MathChain chain;
 
-	public ChainTerm(Term<T> first) {
+	public ChainTerm(final Term<T> first) {
 		if (first == null)
 			throw null;
 		chain = new MathChain(first);
 	}
 
-	public void append(NormalOperator<T, T, T> operator, Term<T> term) {
+	public void append(final NormalOperator<T, T, T> operator, final Term<T> term) {
 		if (operator == null || term == null)
 			throw null;
 		chain.append(operator, term);
 	}
 
 	@Override
-	public String toString() {
-		return evaluate().toString();
-	}
-
-	@Override
 	public T evaluate() {
 		// TODO Get more efficient algorithm
-		Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, t);
+		final Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, t);
 
-		for (Precedence i : chain.getPrecedences())
-			for (Chain<Term<T>, NormalOperator<T, T, T>>.ChainIterator iterator = chain.iterator(); iterator
+		for (final Precedence i : chain.getPrecedences())
+			for (final Chain<Term<T>, NormalOperator<T, T, T>>.ChainIterator iterator = chain.iterator(); iterator
 					.hasNext();) {
-				Chain<Term<T>, NormalOperator<T, T, T>>.Pair pair = iterator.next();
+				final Chain<Term<T>, NormalOperator<T, T, T>>.Pair pair = iterator.next();
 				if (pair.getSecond() == null)// Signifies that getFirst has returned the last Term<T> in the Chain.
 					break;
 
@@ -80,6 +75,11 @@ public class ChainTerm<T> implements Term<T> {
 			chain.remove(0);
 		}
 		return value.evaluate();
+	}
+
+	@Override
+	public String toString() {
+		return evaluate().toString();
 	}
 
 }

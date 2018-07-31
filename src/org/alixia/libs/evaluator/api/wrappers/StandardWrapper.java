@@ -3,17 +3,26 @@ package org.alixia.libs.evaluator.api.wrappers;
 public enum StandardWrapper implements Wrapper {
 	PARENTHESES('(', ')'), BRACKETS('[', ']'), BRACES('{', '}'), CHEVRONS('<', '>');
 
+	public static StandardWrapper closeValueOf(final char c) {
+		for (final StandardWrapper sw : StandardWrapper.values())
+			if (sw.getCloser() == c)
+				return sw;
+		return null;
+	}
+
+	public static StandardWrapper openValueOf(final char c) {
+		for (final StandardWrapper sw : StandardWrapper.values())
+			if (sw.getOpenner() == c)
+				return sw;
+		return null;
+	}
+
 	// TODO Rename to "opener."
 	private final char openner, closer;
 
-	private StandardWrapper(char openner, char closer) {
+	private StandardWrapper(final char openner, final char closer) {
 		this.openner = openner;
 		this.closer = closer;
-	}
-
-	@Override
-	public char getOpenner() {
-		return openner;
 	}
 
 	@Override
@@ -21,17 +30,8 @@ public enum StandardWrapper implements Wrapper {
 		return closer;
 	}
 
-	public static StandardWrapper openValueOf(char c) {
-		for (StandardWrapper sw : StandardWrapper.values())
-			if (sw.getOpenner() == c)
-				return sw;
-		return null;
-	}
-
-	public static StandardWrapper closeValueOf(char c) {
-		for (StandardWrapper sw : StandardWrapper.values())
-			if (sw.getCloser() == c)
-				return sw;
-		return null;
+	@Override
+	public char getOpenner() {
+		return openner;
 	}
 }
