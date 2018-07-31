@@ -1,16 +1,20 @@
 package org.alixia.libs.evaluator;
 
 import org.alixia.libs.evaluator.api.Spate;
+import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
+import org.alixia.libs.evaluator.api.terms.Number;
 
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
-public class Evaluator<T extends Number> {
+public class Evaluator<T extends java.lang.Number> {
 
 	private Evaluator() {
 	}
@@ -53,6 +57,7 @@ public class Evaluator<T extends Number> {
 		return character == null ? -1 : character;
 	}
 
+	@SuppressWarnings("unchecked")
 	private Term<?> parseTerm() {
 
 		// Check for whitespace. Stop where equation.next() will return the first
@@ -72,6 +77,39 @@ public class Evaluator<T extends Number> {
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
 				return nest;
+			} else if (Character.isLetter(c) || c == '_') {
+				String name = "" + (char) c;
+				equation.skip();// equation is now positioned at first function name char
+				while ((c = equation.peek()) == '_' || Character.isLetterOrDigit(c)) {
+					name += (char) c;
+					equation.skip();
+				}
+
+				// TODO Match name against name database to determine if it's a function or
+				// variable.
+
+				// Functions have a higher precedence than vars; if there is a name conflict, a
+				// the name will be parsed as the function rather than a variable, unless the
+				// "function::functionName" specifying syntax is used, or a tilde is used to
+				// force variable treatment.
+				if (c == '[' || c == '(') {
+					@SuppressWarnings("rawtypes")
+					SimpleFunction function = SimpleFunction.getFunction(name);
+					List<String> args = parseFunctionArgs(StandardWrapper.openValueOf((char) c));
+					if (function == null)
+						throw new RuntimeException("Invalid function name: " + name
+								+ "; couldn't find a function with the specified name.");
+					else if (args.isEmpty())
+						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
+					else if (args.size() > 1)
+						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
+					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
+				}
+
+				// TODO Parse function
+				else
+					throw new RuntimeException("Variables are not yet supported.");
+
 			} else if (Character.isDigit(c) || c == '.') {
 				String numb = "";
 				boolean encounteredDecimal = false;
@@ -109,6 +147,47 @@ public class Evaluator<T extends Number> {
 
 	}
 
+	private List<String> parseFunctionArgs(StandardWrapper parentheses) {
+		// When called, peek() should return an opening parenthesis.
+
+		int meets = 0;
+		int c;
+
+		while (true) {
+			c = box(equation.next());
+			if (c == -1)
+				return null;
+			else if (c == parentheses.getOpenner())
+				break;
+		}
+		meets++;
+
+		List<String> args = new LinkedList<>();
+		String arg = "";
+		while (true) {
+			c = box(equation.peek());
+			if (c == -1)
+				throw new RuntimeException("Equation ends prematurely; a closing '" + parentheses.getCloser()
+						+ "' was expected for a function, but was not found.");
+			else if (c == parentheses.getOpenner())
+				meets++;
+			else if (c == parentheses.getCloser())
+				meets--;
+			equation.skip();
+			if (meets == 0) {
+				args.add(arg);
+				break;
+			} else if (meets == 1 && c == ',') {
+				args.add(arg.trim());
+				arg = "";
+				continue;
+			}
+			arg += (char) c;
+		}
+
+		return args;
+	}
+
 	private ChainTerm<?> parseNest(StandardWrapper parentheses) {
 
 		// Should be called when peek() returns an opening parenthesis.
@@ -129,7 +208,7 @@ public class Evaluator<T extends Number> {
 			c = box(equation.peek());
 			if (c == -1)
 				throw new RuntimeException("Equation ends prematurely; a closing '" + parentheses.getCloser()
-						+ "' was expected but was not found.");
+						+ "' was expected, but was not found.");
 			else if (c == parentheses.getOpenner())
 				meets++;
 			else if (c == parentheses.getCloser())
