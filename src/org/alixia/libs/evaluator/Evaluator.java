@@ -191,6 +191,24 @@ public class Evaluator<T extends java.lang.Number> {
 					equation.skip();
 				}
 
+				Boolean isFunction;// true indicates that "function::" prefixing was used, false indicates that
+										// such was used, but for variables, and null indicates that no forcing was
+										// determined off of prefix detection.
+				if (name.startsWith("f::") || name.startsWith("func::") || name.startsWith("function::"))
+					isFunction = true;
+				else if (name.startsWith("v::") || name.startsWith("var::") || name.startsWith("vars::")
+						|| name.startsWith("variables::"))
+					if (c == '[')
+						throw new RuntimeException(
+								"Object name was specified to be the name of a variable, but was invoked as a function. Name: "
+										+ name);
+					else
+						isFunction = false;
+				else
+					isFunction = null;
+				if (isFunction != null && (name = name.substring(name.indexOf("::") + 2)).isEmpty())
+					throw new RuntimeException("No " + (isFunction ? "function" : "variable") + " name specified.");
+
 				// TODO Match name against name database to determine if it's a function or
 				// variable.
 
@@ -198,9 +216,14 @@ public class Evaluator<T extends java.lang.Number> {
 				// the name will be parsed as the function rather than a variable, unless the
 				// "function::functionName" specifying syntax is used, or a tilde is used to
 				// force variable treatment.
-				if (c == '[' || c == '(') {
-					@SuppressWarnings("rawtypes")
-					final SimpleFunction function = SimpleFunction.getFunction(name);
+
+				@SuppressWarnings("rawtypes")
+				final SimpleFunction function = SimpleFunction.getFunction(name);
+
+				if (isFunction == null)
+					isFunction = function == null ? false : true;
+
+				if (isFunction) {
 					final List<String> args = parseFunctionArgs(StandardWrapper.openValueOf((char) c));
 					if (function == null)
 						throw new RuntimeException("Invalid function name: " + name
@@ -210,11 +233,13 @@ public class Evaluator<T extends java.lang.Number> {
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
 					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
-				}
 
-				// TODO Parse function
-				else
-					throw new RuntimeException("Variables are not yet supported.");
+				} else {
+					if (c == '[')
+						throw new RuntimeException("Brackets were used to designate that " + name
+								+ " should be a function, but a function wasn't found with that name. Perhaps it's a variable and parentheses were meant to be used instead.");
+					// TODO Parse variable and handle.
+				}
 
 			} else if (Character.isDigit(c) || c == '.') {
 				String numb = "";
