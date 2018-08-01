@@ -187,7 +187,7 @@ public class Evaluator<T extends java.lang.Number> {
 			} else if (Character.isLetter(c) || c == '_') {
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
-				while ((c = equation.peek()) == '_' || Character.isLetterOrDigit(c)) {
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c)) {
 					name += (char) c;
 					equation.skip();
 				}
@@ -225,7 +225,12 @@ public class Evaluator<T extends java.lang.Number> {
 					isFunction = function == null ? false : true;
 
 				if (isFunction) {
-					final List<String> args = parseFunctionArgs(StandardWrapper.openValueOf((char) c));
+					StandardWrapper parenthesis;
+					if (c == -1 || (parenthesis = StandardWrapper.openValueOf((char) c)) == null)
+						throw new RuntimeException(
+								name + " was determined to be a function, but was not followed by parentheses.");
+
+					final List<String> args = parseFunctionArgs(parenthesis);
 					if (function == null)
 						throw new RuntimeException("Invalid function name: " + name
 								+ "; couldn't find a function with the specified name.");
