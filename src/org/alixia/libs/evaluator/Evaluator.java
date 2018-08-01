@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.alixia.libs.evaluator.api.Spate;
+import org.alixia.libs.evaluator.api.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
@@ -192,8 +193,8 @@ public class Evaluator<T extends java.lang.Number> {
 				}
 
 				Boolean isFunction;// true indicates that "function::" prefixing was used, false indicates that
-										// such was used, but for variables, and null indicates that no forcing was
-										// determined off of prefix detection.
+									// such was used, but for variables, and null indicates that no forcing was
+									// determined off of prefix detection.
 				if (name.startsWith("f::") || name.startsWith("func::") || name.startsWith("function::"))
 					isFunction = true;
 				else if (name.startsWith("v::") || name.startsWith("var::") || name.startsWith("vars::")
@@ -220,7 +221,7 @@ public class Evaluator<T extends java.lang.Number> {
 				@SuppressWarnings("rawtypes")
 				final SimpleFunction function = SimpleFunction.getFunction(name);
 
-				if (isFunction == null)
+				if (isFunction == null)// The indication by isFunction changes here.
 					isFunction = function == null ? false : true;
 
 				if (isFunction) {
@@ -233,12 +234,15 @@ public class Evaluator<T extends java.lang.Number> {
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
 					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
-
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
 								+ " should be a function, but a function wasn't found with that name. Perhaps it's a variable and parentheses were meant to be used instead.");
-					// TODO Parse variable and handle.
+					Variable<?> variable = Variable.getVariable(name);
+					if (variable == null)
+						throw new RuntimeException("Invalid variable name: " + name
+								+ "; couldn't find a variable with the specified name.");
+					return variable::getValue;
 				}
 
 			} else if (Character.isDigit(c) || c == '.') {
