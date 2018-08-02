@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.alixia.libs.evaluator.api.Spate;
+import org.alixia.libs.evaluator.api.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
@@ -186,10 +187,28 @@ public class Evaluator<T extends java.lang.Number> {
 			} else if (Character.isLetter(c) || c == '_') {
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
-				while ((c = equation.peek()) == '_' || Character.isLetterOrDigit(c)) {
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c)) {
 					name += (char) c;
 					equation.skip();
 				}
+
+				Boolean isFunction;// true indicates that "function::" prefixing was used, false indicates that
+									// such was used, but for variables, and null indicates that no forcing was
+									// determined off of prefix detection.
+				if (name.startsWith("f::") || name.startsWith("func::") || name.startsWith("function::"))
+					isFunction = true;
+				else if (name.startsWith("v::") || name.startsWith("var::") || name.startsWith("vars::")
+						|| name.startsWith("variables::"))
+					if (c == '[')
+						throw new RuntimeException(
+								"Object name was specified to be the name of a variable, but was invoked as a function. Name: "
+										+ name);
+					else
+						isFunction = false;
+				else
+					isFunction = null;
+				if (isFunction != null && (name = name.substring(name.indexOf("::") + 2)).isEmpty())
+					throw new RuntimeException("No " + (isFunction ? "function" : "variable") + " name specified.");
 
 				// TODO Match name against name database to determine if it's a function or
 				// variable.
@@ -198,10 +217,20 @@ public class Evaluator<T extends java.lang.Number> {
 				// the name will be parsed as the function rather than a variable, unless the
 				// "function::functionName" specifying syntax is used, or a tilde is used to
 				// force variable treatment.
-				if (c == '[' || c == '(') {
-					@SuppressWarnings("rawtypes")
-					final SimpleFunction function = SimpleFunction.getFunction(name);
-					final List<String> args = parseFunctionArgs(StandardWrapper.openValueOf((char) c));
+
+				@SuppressWarnings("rawtypes")
+				final SimpleFunction function = SimpleFunction.getFunction(name);
+
+				if (isFunction == null)// The indication by isFunction changes here.
+					isFunction = function == null ? false : true;
+
+				if (isFunction) {
+					StandardWrapper parenthesis;
+					if (c == -1 || (parenthesis = StandardWrapper.openValueOf((char) c)) == null)
+						throw new RuntimeException(
+								name + " was determined to be a function, but was not followed by parentheses.");
+
+					final List<String> args = parseFunctionArgs(parenthesis);
 					if (function == null)
 						throw new RuntimeException("Invalid function name: " + name
 								+ "; couldn't find a function with the specified name.");
@@ -210,11 +239,16 @@ public class Evaluator<T extends java.lang.Number> {
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
 					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
+				} else {
+					if (c == '[')
+						throw new RuntimeException("Brackets were used to designate that " + name
+								+ " should be a function, but a function wasn't found with that name. Perhaps it's a variable and parentheses were meant to be used instead.");
+					Variable<?> variable = Variable.getVariable(name);
+					if (variable == null)
+						throw new RuntimeException("Invalid variable name: " + name
+								+ "; couldn't find a variable with the specified name.");
+					return variable::getValue;
 				}
-
-				// TODO Parse function
-				else
-					throw new RuntimeException("Variables are not yet supported.");
 
 			} else if (Character.isDigit(c) || c == '.') {
 				String numb = "";
