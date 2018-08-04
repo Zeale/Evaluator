@@ -37,10 +37,16 @@ public class Evaluator<T extends java.lang.Number> {
 		return character == null ? -1 : character;
 	}
 
+	/**
+	 * This method parses an equation from {@link #equation}. It expects
+	 * {@link #equation} to be set. It only parses the actual equation, not any
+	 * variable assignments. (If those exist, they should already be parsed when
+	 * this method is called.
+	 * 
+	 * @return Returns a {@link ChainTerm} of a parsed equation.
+	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized ChainTerm<?> chain(final Spate<Character> equation) {
-		// Set the field so that other methods can use it.
-		this.equation = equation;
+	public synchronized ChainTerm<?> chain() {
 
 		// Check to see if the equation is empty.
 		Character c;
@@ -137,7 +143,11 @@ public class Evaluator<T extends java.lang.Number> {
 				break;
 			chain += (char) c;
 		}
-		return new Evaluator<Double>().chain(Spate.spate(chain));
+		return new Evaluator<Double>(Spate.spate(chain)).chain();
+	}
+
+	private Evaluator(Spate<Character> equation) {
+		this.equation = equation;
 	}
 
 	private NormalOperator<?, ?, ?> parseOperator() {
@@ -238,7 +248,7 @@ public class Evaluator<T extends java.lang.Number> {
 						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
+					return function.evaluate(new Evaluator<>(Spate.spate(args.get(0))).chain().evaluate());
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
@@ -288,7 +298,8 @@ public class Evaluator<T extends java.lang.Number> {
 	}
 
 	public synchronized double solve(final Spate<Character> equation) {
-		return (double) chain(equation).evaluate();
+		this.equation = equation;
+		return (double) chain().evaluate();
 	}
 
 }
