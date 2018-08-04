@@ -199,7 +199,7 @@ public class Evaluator<T extends java.lang.Number> {
 			} else if (Character.isLetter(c) || c == '_') {
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
-				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c)) {
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c) || c == ':') {// TODO Refine
 					name += (char) c;
 					equation.skip();
 				}
