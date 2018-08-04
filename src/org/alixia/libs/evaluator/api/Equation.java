@@ -25,11 +25,15 @@ public class Equation<T> implements Term<T> {
 			this.assignments.add(s);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public T evaluate() {
 		for (Statement s : assignments)
 			s.execute();
-		return expression.evaluate();
+		if (expression == null)
+			return (T) (Object) 1d;
+		else
+			return expression.evaluate();
 	}
 
 	public ChainTerm<T> getExpression() {

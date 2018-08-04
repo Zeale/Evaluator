@@ -304,11 +304,27 @@ public class Evaluator<T extends java.lang.Number> {
 		Equation<?> equ = new Equation<>();
 
 		while (equation.hasNext()) {
-			Term<?> term = parseTerm();
+			String name = "";
+			int c = box(equation.peek());
+			boolean parsedVar = false;
+
+			if (c == '_' || Character.isLetter(c))
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c)) {
+					name += (char) c;
+					equation.skip();
+					parsedVar = true;
+				}
+
 			clearWhitespace(null);
-			if (term instanceof Variable && box(equation.peek()) == '=') {
-				equ.addAssignment(readAssignment((Variable<?>) term));
-			} else {
+			if (box(equation.peek()) == '=')
+				if (!parsedVar)
+					throw new RuntimeException("Variable assignment invoked upon nothing.");
+				else
+					equ.addAssignment(readAssignment(new Variable<>(name, 0)));
+			else {
+				Term<?> term = parsedVar ? (Term<?>) Variable.getVariable(name) : parseTerm();
+				if (term == null)
+					throw new RuntimeException("No variable was found by the name " + name + ".");
 				if (equ.getExpression() != null)
 					throw new RuntimeException(
 							"Two expressions were included in the equation. Which should be returned is unknown.");
@@ -336,6 +352,8 @@ public class Evaluator<T extends java.lang.Number> {
 			equation.skip();
 			equ += (char) c;
 		}
+		if (c == ';')
+			equation.skip();
 
 		final String finalizedEquation = equ;
 		return () -> ((Variable) term).setValue(new Evaluator<Number>().solve(Spate.spate(finalizedEquation)));

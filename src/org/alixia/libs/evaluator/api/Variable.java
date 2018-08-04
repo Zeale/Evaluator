@@ -4,7 +4,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class Variable<T> {
+import org.alixia.libs.evaluator.api.terms.Term;
+
+public class Variable<T> implements Term<T> {
 
 	private static final Set<Variable<?>> variables = new HashSet<>();
 
@@ -77,6 +79,11 @@ public class Variable<T> {
 
 	public boolean isModifiable() {
 		return modifiable;
+	}
+
+	@Override
+	public T evaluate() {
+		return getValue();
 	}
 
 }
