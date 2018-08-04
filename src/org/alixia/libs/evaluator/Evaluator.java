@@ -11,10 +11,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.alixia.libs.evaluator.api.Equation;
 import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
+import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
@@ -297,9 +299,52 @@ public class Evaluator<T extends java.lang.Number> {
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private Equation<?> parseEquation() {
+		Equation<?> equ = new Equation<>();
+
+		while (equation.hasNext()) {
+			Term<?> term = parseTerm();
+			clearWhitespace(null);
+			if (term instanceof Variable && box(equation.peek()) == '=') {
+				equ.addAssignment(readAssignment((Variable<?>) term));
+			} else {
+				if (equ.getExpression() != null)
+					throw new RuntimeException(
+							"Two expressions were included in the equation. Which should be returned is unknown.");
+				ChainTerm parse = new ChainTerm<>(term);
+				clearWhitespace(null);
+				while (equation.hasNext() && box(equation.peek()) != ';') {
+					parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
+					clearWhitespace(null);// For the while loop.
+				}
+				equ.setExpression(parse);
+			}
+		}
+
+		return equ;
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private Statement readAssignment(Variable term) {
+		equation.skip();
+		String equ = "";
+		if (!equation.hasNext() || equation.peek() == ';')
+			throw new RuntimeException("Variable assignment contains no value.");
+		int c;
+		while ((c = box(equation.peek())) != ';' && c != -1) {
+			equation.skip();
+			equ += (char) c;
+		}
+
+		final String finalizedEquation = equ;
+		return () -> ((Variable) term).setValue(new Evaluator<Number>().solve(Spate.spate(finalizedEquation)));
+
+	}
+
 	public synchronized double solve(final Spate<Character> equation) {
 		this.equation = equation;
-		return (double) chain().evaluate();
+		return (double) parseEquation().evaluate();
 	}
 
 }
