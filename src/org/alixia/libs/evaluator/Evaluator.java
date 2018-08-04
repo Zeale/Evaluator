@@ -11,10 +11,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.alixia.libs.evaluator.api.Equation;
 import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
+import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
@@ -37,10 +39,16 @@ public class Evaluator<T extends java.lang.Number> {
 		return character == null ? -1 : character;
 	}
 
+	/**
+	 * This method parses an equation from {@link #equation}. It expects
+	 * {@link #equation} to be set. It only parses the actual equation, not any
+	 * variable assignments. (If those exist, they should already be parsed when
+	 * this method is called.
+	 * 
+	 * @return Returns a {@link ChainTerm} of a parsed equation.
+	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized ChainTerm<?> chain(final Spate<Character> equation) {
-		// Set the field so that other methods can use it.
-		this.equation = equation;
+	public synchronized ChainTerm<?> chain() {
 
 		// Check to see if the equation is empty.
 		Character c;
@@ -137,7 +145,11 @@ public class Evaluator<T extends java.lang.Number> {
 				break;
 			chain += (char) c;
 		}
-		return new Evaluator<Double>().chain(Spate.spate(chain));
+		return new Evaluator<Double>(Spate.spate(chain)).chain();
+	}
+
+	private Evaluator(Spate<Character> equation) {
+		this.equation = equation;
 	}
 
 	private NormalOperator<?, ?, ?> parseOperator() {
@@ -187,7 +199,7 @@ public class Evaluator<T extends java.lang.Number> {
 			} else if (Character.isLetter(c) || c == '_') {
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
-				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c)) {
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c) || c == ':') {// TODO Refine
 					name += (char) c;
 					equation.skip();
 				}
@@ -238,7 +250,7 @@ public class Evaluator<T extends java.lang.Number> {
 						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator<>().chain(Spate.spate(args.get(0))).evaluate());
+					return function.evaluate(new Evaluator<>(Spate.spate(args.get(0))).chain().evaluate());
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
@@ -287,8 +299,70 @@ public class Evaluator<T extends java.lang.Number> {
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private Equation<?> parseEquation() {
+		Equation<?> equ = new Equation<>();
+
+		while (equation.hasNext()) {
+			String name = "";
+			int c = box(equation.peek());
+			boolean parsedVar = false;
+
+			if (c == '_' || Character.isLetter(c))
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c)) {
+					name += (char) c;
+					equation.skip();
+					parsedVar = true;
+				}
+
+			clearWhitespace(null);
+			if (box(equation.peek()) == '=')
+				if (!parsedVar)
+					throw new RuntimeException("Variable assignment invoked upon nothing.");
+				else
+					equ.addAssignment(readAssignment(new Variable<>(name, 0)));
+			else {
+				Term<?> term = parsedVar ? (Term<?>) Variable.getVariable(name) : parseTerm();
+				if (term == null)
+					throw new RuntimeException("No variable was found by the name " + name + ".");
+				if (equ.getExpression() != null)
+					throw new RuntimeException(
+							"Two expressions were included in the equation. Which should be returned is unknown.");
+				ChainTerm parse = new ChainTerm<>(term);
+				clearWhitespace(null);
+				while (equation.hasNext() && box(equation.peek()) != ';') {
+					parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
+					clearWhitespace(null);// For the while loop.
+				}
+				equ.setExpression(parse);
+			}
+		}
+
+		return equ;
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private Statement readAssignment(Variable term) {
+		equation.skip();
+		String equ = "";
+		if (!equation.hasNext() || equation.peek() == ';')
+			throw new RuntimeException("Variable assignment contains no value.");
+		int c;
+		while ((c = box(equation.peek())) != ';' && c != -1) {
+			equation.skip();
+			equ += (char) c;
+		}
+		if (c == ';')
+			equation.skip();
+
+		final String finalizedEquation = equ;
+		return () -> ((Variable) term).setValue(new Evaluator<Number>().solve(Spate.spate(finalizedEquation)));
+
+	}
+
 	public synchronized double solve(final Spate<Character> equation) {
-		return (double) chain(equation).evaluate();
+		this.equation = equation;
+		return (double) parseEquation().evaluate();
 	}
 
 }
