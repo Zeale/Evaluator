@@ -148,6 +148,14 @@ public class Evaluator<T extends java.lang.Number> {
 		return new Evaluator<Double>(Spate.spate(chain)).chain();
 	}
 
+	public static <T extends Number> Evaluator<T> getEvaluator() {
+		return new Evaluator<>();
+	}
+
+	public static final double evaluate(String equation) throws RuntimeException {
+		return new Evaluator<>().solve(Spate.spate(equation));
+	}
+
 	private Evaluator(Spate<Character> equation) {
 		this.equation = equation;
 	}
