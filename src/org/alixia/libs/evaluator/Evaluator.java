@@ -23,6 +23,14 @@ import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator<T extends java.lang.Number> {
 
+	public static Evaluator<Double> getEvaluator() {
+		return new Evaluator<>();
+	}
+
+	public static double solve(String input) {
+		return new Evaluator<>().solve(Spate.spate(input));
+	}
+
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
