@@ -399,8 +399,7 @@ public class Evaluator<T extends java.lang.Number> {
 
 	public synchronized double solve(final Spate<Character> equation) {
 		this.equation = equation;
-		Object value = parseEquation().evaluate();
-		return value instanceof Long ? (double) (long) value : (double) value;
+		return (double) parseEquation().evaluate();
 	}
 
 }
