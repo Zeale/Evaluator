@@ -22,8 +22,6 @@ import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
-import org.alixia.libs.evaluator.api.types.BigDecimalType;
-import org.alixia.libs.evaluator.api.types.DoubleType;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
@@ -35,27 +33,24 @@ public class Evaluator<T> {
 		return variableMap;
 	}
 
-	public static <T> Evaluator<T> getEvaluator(Data<T> dataType) {
-		return new Evaluator<>(dataType);
+	public static <T> Evaluator<T> getEvaluator() {
+		return new Evaluator<>();
 	}
 
-	private final Data<T> type;
-
 	public static double solve(String input) {
-		return new Evaluator<>(DoubleType.INSTANCE).solve(Spate.spate(input));
+		return new Evaluator<>().solve(Spate.spate(input));
 	}
 
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
-			System.out.println(new Evaluator<>(BigDecimalType.INSTANCE).solve(Spate.spate(scanner.nextLine())));
+			System.out.println(new Evaluator<>().solve(Spate.spate(scanner.nextLine())));
 		scanner.close();
 	}
 
 	private Spate<Character> equation;
 
-	private Evaluator(Data<T> type) {
-		this.type = type;
+	private Evaluator() {
 	}
 
 	private int box(final Character character) {

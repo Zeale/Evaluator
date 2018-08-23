@@ -9,10 +9,11 @@ import org.alixia.libs.evaluator.api.Chain.Combiner;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.operators.Precedented;
 import org.alixia.libs.evaluator.api.operators.Precedented.Precedence;
+import org.alixia.libs.evaluator.api.types.Data;
 
-public class ChainTerm<T> implements Term<T> {
+public class ChainTerm<T extends Data<?>> implements Term<T> {
 
-	private final class MathChain extends Chain<Term<T>, NormalOperator<T, T, T>> {
+	private final class MathChain extends Chain<Term<T>, NormalOperator> {
 
 		private final Set<Precedence> precedences = new TreeSet<>(Collections.reverseOrder());
 
@@ -21,7 +22,7 @@ public class ChainTerm<T> implements Term<T> {
 		}
 
 		@Override
-		public void append(final NormalOperator<T, T, T> second, final Term<T> first) {
+		public void append(final NormalOperator second, final Term<T> first) {
 			super.append(second, first);
 			if (second instanceof Precedented)
 				precedences.add(((Precedented) second).precedence());
@@ -41,21 +42,21 @@ public class ChainTerm<T> implements Term<T> {
 		chain = new MathChain(first);
 	}
 
-	public void append(final NormalOperator<T, T, T> operator, final Term<T> term) {
+	public void append(final NormalOperator operator, final Term<T> term) {
 		if (operator == null || term == null)
 			throw null;
 		chain.append(operator, term);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public T evaluate() {
 		// TODO Get more efficient algorithm
-		final Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, value);
+		final Combiner<Term<T>, Term<T>, NormalOperator, Term<T>> combiner = (f, s, t) -> (Term<T>) s.evaluate(f, t);
 
 		for (final Precedence i : chain.getPrecedences())
-			for (final Chain<Term<T>, NormalOperator<T, T, T>>.ChainIterator iterator = chain.iterator(); iterator
-					.hasNext();) {
-				final Chain<Term<T>, NormalOperator<T, T, T>>.Pair pair = iterator.next();
+			for (final Chain<Term<T>, NormalOperator>.ChainIterator iterator = chain.iterator(); iterator.hasNext();) {
+				final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
 				if (pair.getSecond() == null)// Signifies that getFirst has returned the last Term<T> in the Chain.
 					break;
 
@@ -70,7 +71,7 @@ public class ChainTerm<T> implements Term<T> {
 		Term<T> value = chain.getFront();
 		// Take care of non-precedented operators.
 		while (chain.linked()) {
-			value = chain.getS(0).evaluate(value, chain.getF(1));
+			value = (Term<T>) chain.getS(0).evaluate(value, chain.getF(1));
 			chain.replaceF(1, value);
 			chain.remove(0);
 		}
