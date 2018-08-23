@@ -44,11 +44,11 @@ public class SimpleFunction<I, R> {
 			CEIL = new SimpleFunction<>(Math::ceil, "ceil"), FLOOR = new SimpleFunction<>(Math::floor, "floor");
 
 	public static final SimpleFunction<Double, Long> ROUND = new SimpleFunction<>(Math::round, "round");
-	public static final SimpleFunction<Long, Long> FACTORIAL = new SimpleFunction<>((Function<Long, Long>) t -> {
+	public static final SimpleFunction<? super Number, Double> FACTORIAL = new SimpleFunction<>(t -> {
 		long result = 1;
-		for (long i = 1; i <= t; i++)
+		for (long i = 1; i <= t.longValue(); i++)
 			result *= i;
-		return result;
+		return (double) result;
 	}, "factorial");
 
 	public static SimpleFunction<?, ?> getFunction(final String name) {
