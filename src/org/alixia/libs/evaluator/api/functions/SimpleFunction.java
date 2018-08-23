@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.types.Data;
+import org.alixia.libs.evaluator.api.types.NumericData;
 
-public class SimpleFunction<I, R> {
+public class SimpleFunction<I extends Data<?>, R extends Data<?>> {
 
 	private static final BigInteger BIG_INTEGER_ONE = BigInteger.valueOf(1);
 
@@ -40,24 +42,34 @@ public class SimpleFunction<I, R> {
 
 	}
 
+	private interface BigDecimalWrapper extends Function<NumericData, NumericData> {
+		@Override
+		default NumericData apply(NumericData t) {
+			return new NumericData(apply(t.evaluate()));
+		}
+
+		BigDecimal apply(BigDecimal input);
+	}
+
 	private static final List<SimpleFunction<?, ?>> functions = new ArrayList<>(1);
-	public static final SimpleFunction<BigDecimal, BigDecimal>// SQUARE_ROOT = new SimpleFunction<>(a->a.pow(1/2),
+	public static final SimpleFunction<NumericData, NumericData>// SQUARE_ROOT = new SimpleFunction<>(a->a.pow(1/2),
 																// "sqrt","square_root"),
 	// SINE = new SimpleFunction<>(Math::sin, "sin", "sine"),
 	// COSINE = new SimpleFunction<>(Math::cos, "cos", "cosin", "cosine"),
 	// TANGENT = new SimpleFunction<>(Math::tan, "tan", "tangent"),
 	// CUBE_ROOT = new SimpleFunction<>(Math::cbrt, "cbrt", "cube_root"),
-	CEIL = new SimpleFunction<>((a -> a.setScale(0, RoundingMode.CEILING)), "ceil"),
-			FLOOR = new SimpleFunction<>(a -> a.setScale(0, RoundingMode.FLOOR), "floor");
+	CEIL = new SimpleFunction<>((BigDecimalWrapper) a -> a.setScale(0, RoundingMode.CEILING), "ceil"),
+			FLOOR = new SimpleFunction<>((BigDecimalWrapper) a -> a.setScale(0, RoundingMode.FLOOR), "floor");
 
-	public static final SimpleFunction<BigDecimal, BigInteger> ROUND = new SimpleFunction<>(
-			a -> a.setScale(0, RoundingMode.HALF_UP).toBigInteger(), "round");
-	public static final SimpleFunction<BigInteger, BigInteger> FACTORIAL = new SimpleFunction<>(t -> {
-		BigInteger result = BIG_INTEGER_ONE;
-		for (BigInteger i = BIG_INTEGER_ONE; i.compareTo(t) < 1; i = i.add(BIG_INTEGER_ONE))
-			result = result.multiply(i);
-		return result;
-	}, "factorial");
+	public static final SimpleFunction<NumericData, NumericData> ROUND = new SimpleFunction<>(
+			(BigDecimalWrapper) a -> a.setScale(0, RoundingMode.HALF_UP), "round");
+	public static final SimpleFunction<NumericData, NumericData> FACTORIAL = new SimpleFunction<>(
+			(BigDecimalWrapper) t -> {
+				BigInteger result = BIG_INTEGER_ONE, input = t.toBigInteger();
+				for (BigInteger i = BIG_INTEGER_ONE; i.compareTo(input) < 1; i = i.add(BIG_INTEGER_ONE))
+					result = result.multiply(i);
+				return new BigDecimal(result);
+			}, "factorial");
 
 	public static SimpleFunction<?, ?> getFunction(final String name) {
 		final Alias als = new Alias(name, false);
@@ -68,8 +80,8 @@ public class SimpleFunction<I, R> {
 		return null;
 	}
 
-	private static final <DT> Term<DT> wrap(final DT data) {
-		return () -> data;
+	private static final <DT extends Data<?>> Term<DT> wrap(final DT data) {
+		return Term.wrap(data);
 	}
 
 	private final List<Alias> aliases = new ArrayList<>();

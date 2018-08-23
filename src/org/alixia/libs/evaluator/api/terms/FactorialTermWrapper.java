@@ -1,21 +1,20 @@
 package org.alixia.libs.evaluator.api.terms;
 
-import java.math.BigDecimal;
-
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
+import org.alixia.libs.evaluator.api.types.NumericData;
 
-public class FactorialTermWrapper implements Term<BigDecimal> {
+public class FactorialTermWrapper implements Term<NumericData> {
 
-	private final Term<BigDecimal> term;
+	private final Term<NumericData> term;
 
-	public FactorialTermWrapper(Term<BigDecimal> term) {
+	public FactorialTermWrapper(Term<NumericData> term) {
 		this.term = term;
 	}
 
 	@Override
-	public BigDecimal evaluate() {
+	public NumericData evaluate() {
 		try {
-			return new BigDecimal(SimpleFunction.FACTORIAL.evaluate(term.evaluate().toBigInteger()).evaluate());
+			return SimpleFunction.FACTORIAL.evaluate(term.evaluate()).evaluate();
 		} catch (ClassCastException e) {
 			throw new RuntimeException("The factorial operator was illegally applied to a term. Term: " + term
 					+ ", Term Value: " + term.evaluate());
