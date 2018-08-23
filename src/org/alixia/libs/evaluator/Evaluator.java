@@ -21,9 +21,11 @@ import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.types.DoubleType;
+import org.alixia.libs.evaluator.api.types.Type;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
-public class Evaluator<T extends java.lang.Number> {
+public class Evaluator<T> {
 
 	private final VariableMap variableMap = new VariableMap();
 
@@ -31,24 +33,27 @@ public class Evaluator<T extends java.lang.Number> {
 		return variableMap;
 	}
 
-	public static Evaluator<Double> getEvaluator() {
-		return new Evaluator<>();
+	public static <T> Evaluator<T> getEvaluator(Type<T> dataType) {
+		return new Evaluator<>(dataType);
 	}
 
+	private final Type<T> type;
+
 	public static double solve(String input) {
-		return new Evaluator<>().solve(Spate.spate(input));
+		return new Evaluator<>(DoubleType.INSTANCE).solve(Spate.spate(input));
 	}
 
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
-			System.out.println(new Evaluator<>().solve(Spate.spate(scanner.nextLine())));
+			System.out.println(new Evaluator<>(DoubleType.INSTANCE).solve(Spate.spate(scanner.nextLine())));
 		scanner.close();
 	}
 
 	private Spate<Character> equation;
 
-	private Evaluator() {
+	private Evaluator(Type<T> type) {
+		this.type = type;
 	}
 
 	private int box(final Character character) {
@@ -177,11 +182,12 @@ public class Evaluator<T extends java.lang.Number> {
 				break;
 			chain += (char) c;
 		}
-		return new Evaluator<Double>(Spate.spate(chain)).chain();
+		return new Evaluator<>(Spate.spate(chain), type).chain();
 	}
 
-	private Evaluator(Spate<Character> equation) {
+	private Evaluator(Spate<Character> equation, Type<T> type) {
 		this.equation = equation;
+		this.type = type;
 	}
 
 	private NormalOperator<?, ?, ?> parseOperator() {
@@ -282,7 +288,7 @@ public class Evaluator<T extends java.lang.Number> {
 						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator<>(Spate.spate(args.get(0))).chain().evaluate());
+					return function.evaluate(new Evaluator<>(Spate.spate(args.get(0)), type).chain().evaluate());
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
@@ -393,7 +399,8 @@ public class Evaluator<T extends java.lang.Number> {
 		}
 
 		final String finalizedEquation = equ;
-		return () -> ((Variable) term).setValue(new Evaluator<Number>().solve(Spate.spate(finalizedEquation)));
+		return () -> ((Variable) term)
+				.setValue(new Evaluator<>(DoubleType.INSTANCE).solve(Spate.spate(finalizedEquation)));
 
 	}
 
