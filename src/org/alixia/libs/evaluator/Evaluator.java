@@ -24,7 +24,7 @@ import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.BigDecimalType;
 import org.alixia.libs.evaluator.api.types.DoubleType;
-import org.alixia.libs.evaluator.api.types.Type;
+import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator<T> {
@@ -35,11 +35,11 @@ public class Evaluator<T> {
 		return variableMap;
 	}
 
-	public static <T> Evaluator<T> getEvaluator(Type<T> dataType) {
+	public static <T> Evaluator<T> getEvaluator(Data<T> dataType) {
 		return new Evaluator<>(dataType);
 	}
 
-	private final Type<T> type;
+	private final Data<T> type;
 
 	public static double solve(String input) {
 		return new Evaluator<>(DoubleType.INSTANCE).solve(Spate.spate(input));
@@ -54,7 +54,7 @@ public class Evaluator<T> {
 
 	private Spate<Character> equation;
 
-	private Evaluator(Type<T> type) {
+	private Evaluator(Data<T> type) {
 		this.type = type;
 	}
 
@@ -187,12 +187,12 @@ public class Evaluator<T> {
 		return new Evaluator<>(Spate.spate(chain), type).chain();
 	}
 
-	private Evaluator(Spate<Character> equation, Type<T> type) {
+	private Evaluator(Spate<Character> equation, Data<T> type) {
 		this.equation = equation;
 		this.type = type;
 	}
 
-	private NormalOperator<?, ?, ?> parseOperator() {
+	private NormalOperator parseOperator() {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
 
 		final int c = equation.peek();

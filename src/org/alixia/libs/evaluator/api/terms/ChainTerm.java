@@ -50,7 +50,7 @@ public class ChainTerm<T> implements Term<T> {
 	@Override
 	public T evaluate() {
 		// TODO Get more efficient algorithm
-		final Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, t);
+		final Combiner<Term<T>, Term<T>, NormalOperator<T, T, T>, Term<T>> combiner = (f, s, t) -> s.evaluate(f, value);
 
 		for (final Precedence i : chain.getPrecedences())
 			for (final Chain<Term<T>, NormalOperator<T, T, T>>.ChainIterator iterator = chain.iterator(); iterator

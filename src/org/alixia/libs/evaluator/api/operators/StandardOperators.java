@@ -6,12 +6,12 @@ import java.util.function.BiFunction;
 import org.alixia.libs.evaluator.api.terms.Number;
 import org.alixia.libs.evaluator.api.terms.Term;
 
-public enum StandardOperators implements NormalOperator<BigDecimal, BigDecimal, BigDecimal>, Precedented {
+public enum StandardOperators implements NormalOperator, Precedented {
 	ADD((a, b) -> a.add(b), 1), SUBTRACT((a, b) -> a.subtract(b), 1), MULTIPLY((a, b) -> a.multiply(b), 2),
 	DIVIDE((a, b) -> a.divide(b), 2), EXPONENTIATION((a, b) -> a.pow(b.intValue()), 3),
 	MODULUS((a, b) -> a.remainder(b), 2);
 
-	private final BiFunction<BigDecimal, BigDecimal, BigDecimal> function;
+	private final BiFunction<?, ?, ?> function;
 
 	private final Precedence precedence;
 
@@ -21,7 +21,7 @@ public enum StandardOperators implements NormalOperator<BigDecimal, BigDecimal, 
 	}
 
 	@Override
-	public Term<BigDecimal> evaluate(final Term<BigDecimal> first, final Term<BigDecimal> second) {
+	public Term<BigDecimal> evaluate(final Term<?> first, final Term<?> second) {
 		return new Number<>(function.apply(first.evaluate(), second.evaluate()));
 	}
 
