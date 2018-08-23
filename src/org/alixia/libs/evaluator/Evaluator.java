@@ -18,6 +18,7 @@ import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
+import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
@@ -74,12 +75,28 @@ public class Evaluator<T extends java.lang.Number> {
 		return parse;
 	}
 
-	private void clearWhitespace(final String err) {
+	/**
+	 * Clears any whitespace, and returns true if the next character is the end of
+	 * the equation.
+	 * 
+	 * @param err The error to throw if the end of the equation is found.
+	 * @return <code>true</code> if an error was not thrown and the end of the
+	 *         equation is found, <code>false</code> if an error was not thrown and
+	 *         the end of the equation was not found (i.e. another character that
+	 *         isn't whitespace was found).
+	 */
+	private boolean clearWhitespace(final String err) {
 		Character c;
 		while (Character.isWhitespace(box(c = equation.peek())))
 			equation.skip();
-		if (err != null && c == null)
-			throw new RuntimeException(err);
+		if (err != null)
+			if (c == null)
+				throw new RuntimeException(err);
+			else
+				return false;
+		else
+			return c == null;
+
 	}
 
 	private List<String> parseFunctionArgs(final StandardWrapper parentheses) {
@@ -185,7 +202,7 @@ public class Evaluator<T extends java.lang.Number> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Term<?> parseTerm() {
+	private Term<?> parseTermContents() {
 
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
@@ -195,16 +212,16 @@ public class Evaluator<T extends java.lang.Number> {
 		boolean negate = false;
 		while (true) {
 			c = box(equation.peek());
-			if (c == '+')
+			if (c == '+')// Force Positive
 				negate = false;
-			else if (c == '-')
+			else if (c == '-')// Flip Negativity
 				negate ^= true;
-			else if (c == '(') {
+			else if (c == '(') {// Nest
 				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
 				return nest;
-			} else if (Character.isLetter(c) || c == '_') {
+			} else if (Character.isLetter(c) || c == '_') {// Variable
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
 				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c) || c == ':') {// TODO Refine
@@ -270,7 +287,7 @@ public class Evaluator<T extends java.lang.Number> {
 					return variable::getValue;
 				}
 
-			} else if (Character.isDigit(c) || c == '.') {
+			} else if (Character.isDigit(c) || c == '.') {// Parse Number
 				String numb = "";
 				boolean encounteredDecimal = false;
 				while (true) {
@@ -282,17 +299,20 @@ public class Evaluator<T extends java.lang.Number> {
 						numb += (char) c;
 					} else if (Character.isDigit(c))
 						numb += (char) c;
-					else {// If an unexpected char is found, assume end of term. This may be changed
-							// later, but, until then, with the addition of operators later on, this
-							// behavior will remain safe.
+					else {
+
+						// If an unexpected char is found, assume end of term. This may be changed
+						// later, but, until then, with the addition of operators later on, this
+						// behavior will remain safe.
 						if (numb.charAt(numb.length() - 1) == '.')
 							throw new RuntimeException("Unnecessary decimal found.");
-						return new org.alixia.libs.evaluator.api.terms.Number<>(
-								(negate ? -1 : 1) * Double.parseDouble(numb));
+						double number = (negate ? -1 : 1) * Double.parseDouble(numb);
+
+						return new org.alixia.libs.evaluator.api.terms.Number<>(number);
 					}
 					equation.skip();// We only go on to the next char
 					// (and move the spate's position over by one) if we are not done parsing this
-					// term. This way, this method complete's with the spate's position right before
+					// term. This way, this method completes with the spate's position right before
 					// the next operator's first char. We need to finish one char before the next
 					// thing we need to parse, bc I'm an idiot and I didn't add a "curr()" method to
 					// the Spate class (I didn't want to force some Spates that are built on top of
@@ -304,6 +324,26 @@ public class Evaluator<T extends java.lang.Number> {
 				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
 		} // Leaves off before first digit.
+
+	}
+
+	private Term<?> parseTerm() {
+		Term<?> value = parseTermContents();
+		int c = box(equation.peek());
+		if (Character.isWhitespace(c) || c == '!') {
+			if (!clearWhitespace(null)) {// The next char is not whitespace.
+				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
+						&& ((Number) value.evaluate()).doubleValue() % 1 != 0)
+					throw new RuntimeException(
+							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
+				value = new FactorialTermWrapper(value);
+				// Right now, peek returns '!'. That's why we're in this if block.
+				equation.skip();// Skip over the exclamation point so that the next read operation
+								// (either next or peek) won't see it.
+			}
+		}
+
+		return value;
 
 	}
 
@@ -352,7 +392,8 @@ public class Evaluator<T extends java.lang.Number> {
 
 	public synchronized double solve(final Spate<Character> equation) {
 		this.equation = equation;
-		return (double) parseEquation().evaluate();
+		Object value = parseEquation().evaluate();
+		return value instanceof Long ? (double) (long) value : (double) value;
 	}
 
 }
