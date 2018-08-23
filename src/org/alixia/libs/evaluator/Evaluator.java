@@ -7,6 +7,7 @@ import static org.alixia.libs.evaluator.api.operators.StandardOperators.MODULUS;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.MULTIPLY;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.SUBTRACT;
 
+import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -21,6 +22,7 @@ import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.types.BigDecimalType;
 import org.alixia.libs.evaluator.api.types.DoubleType;
 import org.alixia.libs.evaluator.api.types.Type;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
@@ -46,7 +48,7 @@ public class Evaluator<T> {
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
-			System.out.println(new Evaluator<>(DoubleType.INSTANCE).solve(Spate.spate(scanner.nextLine())));
+			System.out.println(new Evaluator<>(BigDecimalType.INSTANCE).solve(Spate.spate(scanner.nextLine())));
 		scanner.close();
 	}
 
@@ -69,7 +71,7 @@ public class Evaluator<T> {
 	 * @return Returns a {@link ChainTerm} of a parsed equation.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized ChainTerm<?> chain() {
+	public synchronized ChainTerm<BigDecimal> chain() {
 
 		// Check to see if the equation is empty.
 		Character c;
@@ -78,7 +80,7 @@ public class Evaluator<T> {
 		if (c == null)
 			throw new RuntimeException("Equation has no evaluatable content.");
 
-		final ChainTerm<?> parse = new ChainTerm<>(parseTerm());
+		final ChainTerm<BigDecimal> parse = new ChainTerm<>(parseTerm());
 		clearWhitespace(null);
 		while (equation.hasNext()) {
 			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
@@ -152,7 +154,7 @@ public class Evaluator<T> {
 		return args;
 	}
 
-	private ChainTerm<?> parseNest(final StandardWrapper parentheses) {
+	private ChainTerm<BigDecimal> parseNest(final StandardWrapper parentheses) {
 
 		// Should be called when peek() returns an opening parenthesis.
 		int meets = 0;
@@ -215,7 +217,7 @@ public class Evaluator<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Term<?> parseTermContents() {
+	private Term<BigDecimal> parseTermContents() {
 
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
@@ -230,7 +232,7 @@ public class Evaluator<T> {
 			else if (c == '-')// Flip Negativity
 				negate ^= true;
 			else if (c == '(') {// Nest
-				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
+				final ChainTerm<BigDecimal> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
 				return nest;
@@ -293,7 +295,7 @@ public class Evaluator<T> {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
 								+ " should be a function, but a function wasn't found with that name. Perhaps it's a variable and parentheses were meant to be used instead.");
-					Variable<?> variable = variableMap.getVariable(name);
+					Variable<BigDecimal> variable = (Variable<BigDecimal>) variableMap.getVariable(name);
 					if (variable == null)
 						throw new RuntimeException("Invalid variable name: " + name
 								+ "; couldn't find a variable with the specified name.");
@@ -319,7 +321,8 @@ public class Evaluator<T> {
 						// behavior will remain safe.
 						if (numb.charAt(numb.length() - 1) == '.')
 							throw new RuntimeException("Unnecessary decimal found.");
-						double number = (negate ? -1 : 1) * Double.parseDouble(numb);
+						BigDecimal number = type.toBigDecimal(type.fromString(numb))
+								.multiply(new BigDecimal((negate ? -1 : 1)));
 
 						return new org.alixia.libs.evaluator.api.terms.Number<>(number);
 					}
@@ -340,8 +343,9 @@ public class Evaluator<T> {
 
 	}
 
-	private Term<?> parseTerm() {
-		Term<?> value = parseTermContents();
+	@SuppressWarnings("unchecked")
+	private Term<BigDecimal> parseTerm() {
+		Term<BigDecimal> value = parseTermContents();
 		int c = box(equation.peek());
 		if (Character.isWhitespace(c) || c == '!') {
 			if (!clearWhitespace(null)) {// The next char is not whitespace.
@@ -349,7 +353,13 @@ public class Evaluator<T> {
 						&& ((Number) value.evaluate()).doubleValue() % 1 != 0)
 					throw new RuntimeException(
 							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
-				value = new FactorialTermWrapper(value);
+				try {
+					value = new FactorialTermWrapper(
+							new org.alixia.libs.evaluator.api.terms.Number<BigDecimal>(type.toBigDecimal((T) value)));
+				} catch (ClassCastException e) {
+					throw new RuntimeException(
+							"Factorial was applied to some data which was not applicable for factorial.");
+				}
 				// Right now, peek returns '!'. That's why we're in this if block.
 				equation.skip();// Skip over the exclamation point so that the next read operation
 								// (either next or peek) won't see it.
@@ -361,11 +371,11 @@ public class Evaluator<T> {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private Equation<?> parseEquation() {
-		Equation<?> equ = new Equation<>();
+	private Equation<BigDecimal> parseEquation() {
+		Equation<BigDecimal> equ = new Equation<>();
 
 		while (equation.hasNext()) {
-			Term<?> term = parseTerm();
+			Term<BigDecimal> term = parseTerm();
 			clearWhitespace(null);
 			if (term instanceof Variable && box(equation.peek()) == '=') {
 				equ.addAssignment(readAssignment((Variable<?>) term));
@@ -404,9 +414,9 @@ public class Evaluator<T> {
 
 	}
 
-	public synchronized double solve(final Spate<Character> equation) {
+	public synchronized T solve(final Spate<Character> equation) {
 		this.equation = equation;
-		return (double) parseEquation().evaluate();
+		return type.fromBigDecimal(parseEquation().evaluate());
 	}
 
 }

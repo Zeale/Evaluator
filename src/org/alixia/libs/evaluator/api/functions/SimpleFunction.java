@@ -1,5 +1,8 @@
 package org.alixia.libs.evaluator.api.functions;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -7,6 +10,8 @@ import java.util.function.Function;
 import org.alixia.libs.evaluator.api.terms.Term;
 
 public class SimpleFunction<I, R> {
+
+	private static final BigInteger BIG_INTEGER_ONE = BigInteger.valueOf(1);
 
 	public final static class Alias {
 		private final String name;
@@ -36,19 +41,22 @@ public class SimpleFunction<I, R> {
 	}
 
 	private static final List<SimpleFunction<?, ?>> functions = new ArrayList<>(1);
-	public static final SimpleFunction<Double, Double> SQUARE_ROOT = new SimpleFunction<>(Math::sqrt, "sqrt",
-			"square_root"), SINE = new SimpleFunction<>(Math::sin, "sin", "sine"),
-			COSINE = new SimpleFunction<>(Math::cos, "cos", "cosin", "cosine"),
-			TANGENT = new SimpleFunction<>(Math::tan, "tan", "tangent"),
-			CUBE_ROOT = new SimpleFunction<>(Math::cbrt, "cbrt", "cube_root"),
-			CEIL = new SimpleFunction<>(Math::ceil, "ceil"), FLOOR = new SimpleFunction<>(Math::floor, "floor");
+	public static final SimpleFunction<BigDecimal, BigDecimal>// SQUARE_ROOT = new SimpleFunction<>(a->a.pow(1/2),
+																// "sqrt","square_root"),
+	// SINE = new SimpleFunction<>(Math::sin, "sin", "sine"),
+	// COSINE = new SimpleFunction<>(Math::cos, "cos", "cosin", "cosine"),
+	// TANGENT = new SimpleFunction<>(Math::tan, "tan", "tangent"),
+	// CUBE_ROOT = new SimpleFunction<>(Math::cbrt, "cbrt", "cube_root"),
+	CEIL = new SimpleFunction<>((a -> a.setScale(0, RoundingMode.CEILING)), "ceil"),
+			FLOOR = new SimpleFunction<>(a -> a.setScale(0, RoundingMode.FLOOR), "floor");
 
-	public static final SimpleFunction<Double, Long> ROUND = new SimpleFunction<>(Math::round, "round");
-	public static final SimpleFunction<? super Number, Double> FACTORIAL = new SimpleFunction<>(t -> {
-		long result = 1;
-		for (long i = 1; i <= t.longValue(); i++)
-			result *= i;
-		return (double) result;
+	public static final SimpleFunction<BigDecimal, BigInteger> ROUND = new SimpleFunction<>(
+			a -> a.setScale(0, RoundingMode.HALF_UP).toBigInteger(), "round");
+	public static final SimpleFunction<BigInteger, BigInteger> FACTORIAL = new SimpleFunction<>(t -> {
+		BigInteger result = BIG_INTEGER_ONE;
+		for (BigInteger i = BIG_INTEGER_ONE; i.compareTo(t) < 1; i = i.add(BIG_INTEGER_ONE))
+			result = result.multiply(i);
+		return result;
 	}, "factorial");
 
 	public static SimpleFunction<?, ?> getFunction(final String name) {
