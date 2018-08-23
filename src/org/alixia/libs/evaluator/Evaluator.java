@@ -18,6 +18,7 @@ import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
+import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
@@ -201,7 +202,7 @@ public class Evaluator<T extends java.lang.Number> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Term<?> parseTerm() {
+	private Term<?> parseTermContents() {
 
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
@@ -300,19 +301,6 @@ public class Evaluator<T extends java.lang.Number> {
 						numb += (char) c;
 					else {
 
-						boolean factorial = false;
-						if (Character.isWhitespace(c) || c == '!') {
-							if (!clearWhitespace(null)) {// The next char is not whitespace.
-								if (encounteredDecimal)
-									throw new RuntimeException(
-											"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
-								factorial = true;
-								// Right now, peek returns '!'. That's why we're in this if block.
-								equation.skip();// Skip over the exclamation point so that the next read operation
-												// (either next or peek) won't see it.
-							}
-						}
-
 						// If an unexpected char is found, assume end of term. This may be changed
 						// later, but, until then, with the addition of operators later on, this
 						// behavior will remain safe.
@@ -320,10 +308,7 @@ public class Evaluator<T extends java.lang.Number> {
 							throw new RuntimeException("Unnecessary decimal found.");
 						double number = (negate ? -1 : 1) * Double.parseDouble(numb);
 
-						return factorial ? SimpleFunction.FACTORIAL.evaluate((long) number)// An exception should've
-																							// been thrown if number has
-																							// a decimal.
-								: new org.alixia.libs.evaluator.api.terms.Number<>(number);
+						return new org.alixia.libs.evaluator.api.terms.Number<>(number);
 					}
 					equation.skip();// We only go on to the next char
 					// (and move the spate's position over by one) if we are not done parsing this
@@ -339,6 +324,26 @@ public class Evaluator<T extends java.lang.Number> {
 				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
 		} // Leaves off before first digit.
+
+	}
+
+	private Term<?> parseTerm() {
+		Term<?> value = parseTermContents();
+		int c = box(equation.peek());
+		if (Character.isWhitespace(c) || c == '!') {
+			if (!clearWhitespace(null)) {// The next char is not whitespace.
+				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
+						&& ((Number) value.evaluate()).doubleValue() % 1 != 0)
+					throw new RuntimeException(
+							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
+				value = new FactorialTermWrapper(value);
+				// Right now, peek returns '!'. That's why we're in this if block.
+				equation.skip();// Skip over the exclamation point so that the next read operation
+								// (either next or peek) won't see it.
+			}
+		}
+
+		return value;
 
 	}
 
