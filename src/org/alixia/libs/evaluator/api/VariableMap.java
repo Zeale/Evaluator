@@ -15,8 +15,12 @@ public class VariableMap extends HashSet<Variable<?>> {
 	private static final long serialVersionUID = 1L;
 
 	public Variable<?> getVariable(String name) {
-		for (Variable<?> v : this)
-			return v.ignoreCase ? v.name.equalsIgnoreCase(name) ? v : null : v.name.equals(name) ? v : null;
+		for (Variable<?> v : this) {
+			if (v.ignoreCase ? v.name.equalsIgnoreCase(name) : v.name.equals(name))
+				return v;
+			else
+				continue;
+		}
 		return null;
 	}
 
@@ -78,7 +82,7 @@ public class VariableMap extends HashSet<Variable<?>> {
 
 		@Override
 		public String toString() {
-			return value + "";
+			return name + "[" + value + "]";
 		}
 
 		public boolean isModifiable() {
