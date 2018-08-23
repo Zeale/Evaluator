@@ -23,8 +23,12 @@ import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator<T extends java.lang.Number> {
-	
+
 	private final VariableMap variableMap = new VariableMap();
+
+	public VariableMap getVariableMap() {
+		return variableMap;
+	}
 
 	public static Evaluator<Double> getEvaluator() {
 		return new Evaluator<>();
