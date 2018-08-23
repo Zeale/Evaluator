@@ -71,7 +71,8 @@ public class VariableMap extends HashSet<Variable<?>> {
 		}
 
 		public void setValue(T value) {
-			// TODO EXCEPTION
+			if (!modifiable)
+				throw new RuntimeException("The variable, " + this + ", cannot be modified.");
 			this.value = value;
 		}
 
