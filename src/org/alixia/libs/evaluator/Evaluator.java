@@ -28,6 +28,8 @@ import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator {
 
+	public static final int MAXIMUM_BIG_DECIMAL_DIVISION_SCALE = 4679;
+
 	private final VariableMap variableMap = new VariableMap();
 
 	public VariableMap getVariableMap() {
