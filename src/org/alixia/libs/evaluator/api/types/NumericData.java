@@ -8,6 +8,14 @@ public final class NumericData extends SimpleData<BigDecimal> {
 		super(value);
 	}
 
+	public NumericData(Number value) {
+		this(value.toString());
+	}
+
+	public NumericData(String value) {
+		this(new BigDecimal(value));
+	}
+
 	@Override
 	public <DT extends Data<?>> BigDecimal cast(DT item) {
 		return null;

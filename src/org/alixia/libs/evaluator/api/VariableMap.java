@@ -1,16 +1,16 @@
 package org.alixia.libs.evaluator.api;
 
-import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Iterator;
 
 import org.alixia.libs.evaluator.api.VariableMap.Variable;
+import org.alixia.libs.evaluator.api.types.Data;
+import org.alixia.libs.evaluator.api.types.NumericData;
 
 public class VariableMap extends HashSet<Variable<?>> {
 
-	private static final BigDecimal BIG_DECIMAL_PI = new BigDecimal(Math.PI), BIG_DECIMAL_E = new BigDecimal(Math.E);
-
-	public final Variable<BigDecimal> PI = new Variable<>("pi", BIG_DECIMAL_PI), E = new Variable<>("E", BIG_DECIMAL_E);
+	public final Variable<NumericData> PI = new Variable<>("pi", new NumericData(Math.PI)),
+			E = new Variable<>("E", new NumericData(Math.E));
 
 	/**
 	 * SUID
@@ -34,7 +34,7 @@ public class VariableMap extends HashSet<Variable<?>> {
 		}
 	}
 
-	public class Variable<T> {
+	public class Variable<T extends Data<?>> {
 
 		private T value;
 		private final boolean modifiable, ignoreCase;

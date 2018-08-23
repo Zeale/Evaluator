@@ -23,9 +23,10 @@ import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
+import org.alixia.libs.evaluator.api.types.NumericData;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
-public class Evaluator<T> {
+public class Evaluator {
 
 	private final VariableMap variableMap = new VariableMap();
 
@@ -33,18 +34,26 @@ public class Evaluator<T> {
 		return variableMap;
 	}
 
-	public static <T> Evaluator<T> getEvaluator() {
-		return new Evaluator<>();
+	public static Evaluator getEvaluator() {
+		return new Evaluator();
 	}
 
-	public static double solve(String input) {
-		return new Evaluator<>().solve(Spate.spate(input));
+	public static Data<?> solve(String input) {
+		return new Evaluator().solve(Spate.spate(input));
+	}
+
+	public static BigDecimal solveToNumber(String input) {
+		return solveToNumber(Spate.spate(input));
+	}
+
+	public static BigDecimal solveToNumber(Spate<Character> input) {
+		return new Evaluator().solve(input).toNumericData().evaluate();
 	}
 
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
-			System.out.println(new Evaluator<>().solve(Spate.spate(scanner.nextLine())));
+			System.out.println(solveToNumber(Spate.spate(scanner.nextLine())));
 		scanner.close();
 	}
 
@@ -66,7 +75,7 @@ public class Evaluator<T> {
 	 * @return Returns a {@link ChainTerm} of a parsed equation.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized ChainTerm<BigDecimal> chain() {
+	public synchronized ChainTerm<?> chain() {
 
 		// Check to see if the equation is empty.
 		Character c;
@@ -75,7 +84,7 @@ public class Evaluator<T> {
 		if (c == null)
 			throw new RuntimeException("Equation has no evaluatable content.");
 
-		final ChainTerm<BigDecimal> parse = new ChainTerm<>(parseTerm());
+		final ChainTerm<?> parse = new ChainTerm<>(parseTerm());
 		clearWhitespace(null);
 		while (equation.hasNext()) {
 			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
@@ -149,7 +158,7 @@ public class Evaluator<T> {
 		return args;
 	}
 
-	private ChainTerm<BigDecimal> parseNest(final StandardWrapper parentheses) {
+	private ChainTerm<?> parseNest(final StandardWrapper parentheses) {
 
 		// Should be called when peek() returns an opening parenthesis.
 		int meets = 0;
@@ -179,12 +188,11 @@ public class Evaluator<T> {
 				break;
 			chain += (char) c;
 		}
-		return new Evaluator<>(Spate.spate(chain), type).chain();
+		return new Evaluator(Spate.spate(chain)).chain();
 	}
 
-	private Evaluator(Spate<Character> equation, Data<T> type) {
+	private Evaluator(Spate<Character> equation) {
 		this.equation = equation;
-		this.type = type;
 	}
 
 	private NormalOperator parseOperator() {
@@ -212,7 +220,7 @@ public class Evaluator<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Term<BigDecimal> parseTermContents() {
+	private Term<?> parseTermContents() {
 
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
@@ -227,7 +235,7 @@ public class Evaluator<T> {
 			else if (c == '-')// Flip Negativity
 				negate ^= true;
 			else if (c == '(') {// Nest
-				final ChainTerm<BigDecimal> nest = parseNest(StandardWrapper.PARENTHESES);
+				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
 				return nest;
@@ -285,12 +293,12 @@ public class Evaluator<T> {
 						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator<>(Spate.spate(args.get(0)), type).chain().evaluate());
+					return function.evaluate(new Evaluator(Spate.spate(args.get(0))).chain().evaluate());
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
 								+ " should be a function, but a function wasn't found with that name. Perhaps it's a variable and parentheses were meant to be used instead.");
-					Variable<BigDecimal> variable = (Variable<BigDecimal>) variableMap.getVariable(name);
+					Variable<?> variable = variableMap.getVariable(name);
 					if (variable == null)
 						throw new RuntimeException("Invalid variable name: " + name
 								+ "; couldn't find a variable with the specified name.");
@@ -316,10 +324,8 @@ public class Evaluator<T> {
 						// behavior will remain safe.
 						if (numb.charAt(numb.length() - 1) == '.')
 							throw new RuntimeException("Unnecessary decimal found.");
-						BigDecimal number = type.toBigDecimal(type.fromString(numb))
-								.multiply(new BigDecimal((negate ? -1 : 1)));
-
-						return new org.alixia.libs.evaluator.api.terms.Number<>(number);
+						return new org.alixia.libs.evaluator.api.terms.Number(
+								new NumericData(new BigDecimal(numb).multiply(new BigDecimal((negate ? -1 : 1)))));
 					}
 					equation.skip();// We only go on to the next char
 					// (and move the spate's position over by one) if we are not done parsing this
@@ -339,8 +345,8 @@ public class Evaluator<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Term<BigDecimal> parseTerm() {
-		Term<BigDecimal> value = parseTermContents();
+	private Term<?> parseTerm() {
+		Term<?> value = parseTermContents();
 		int c = box(equation.peek());
 		if (Character.isWhitespace(c) || c == '!') {
 			if (!clearWhitespace(null)) {// The next char is not whitespace.
@@ -349,8 +355,7 @@ public class Evaluator<T> {
 					throw new RuntimeException(
 							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
 				try {
-					value = new FactorialTermWrapper(
-							new org.alixia.libs.evaluator.api.terms.Number<BigDecimal>(type.toBigDecimal((T) value)));
+					value = new FactorialTermWrapper((Term<NumericData>) value);
 				} catch (ClassCastException e) {
 					throw new RuntimeException(
 							"Factorial was applied to some data which was not applicable for factorial.");
@@ -366,11 +371,11 @@ public class Evaluator<T> {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private Equation<BigDecimal> parseEquation() {
-		Equation<BigDecimal> equ = new Equation<>();
+	private Equation<?> parseEquation() {
+		Equation<?> equ = new Equation<>();
 
 		while (equation.hasNext()) {
-			Term<BigDecimal> term = parseTerm();
+			Term<?> term = parseTerm();
 			clearWhitespace(null);
 			if (term instanceof Variable && box(equation.peek()) == '=') {
 				equ.addAssignment(readAssignment((Variable<?>) term));
@@ -404,14 +409,13 @@ public class Evaluator<T> {
 		}
 
 		final String finalizedEquation = equ;
-		return () -> ((Variable) term)
-				.setValue(new Evaluator<>(DoubleType.INSTANCE).solve(Spate.spate(finalizedEquation)));
+		return () -> ((Variable) term).setValue(new Evaluator().solve(Spate.spate(finalizedEquation)));
 
 	}
 
-	public synchronized T solve(final Spate<Character> equation) {
+	public synchronized Data<?> solve(final Spate<Character> equation) {
 		this.equation = equation;
-		return type.fromBigDecimal(parseEquation().evaluate());
+		return parseEquation().evaluate();
 	}
 
 }
