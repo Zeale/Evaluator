@@ -13,7 +13,8 @@ import java.util.Scanner;
 
 import org.alixia.libs.evaluator.api.Equation;
 import org.alixia.libs.evaluator.api.Spate;
-import org.alixia.libs.evaluator.api.Variable;
+import org.alixia.libs.evaluator.api.VariableMap;
+import org.alixia.libs.evaluator.api.VariableMap.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.statements.Statement;
@@ -23,6 +24,12 @@ import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator<T extends java.lang.Number> {
+
+	private final VariableMap variableMap = new VariableMap();
+
+	public VariableMap getVariableMap() {
+		return variableMap;
+	}
 
 	public static Evaluator<Double> getEvaluator() {
 		return new Evaluator<>();
@@ -280,7 +287,7 @@ public class Evaluator<T extends java.lang.Number> {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
 								+ " should be a function, but a function wasn't found with that name. Perhaps it's a variable and parentheses were meant to be used instead.");
-					Variable<?> variable = Variable.getVariable(name);
+					Variable<?> variable = variableMap.getVariable(name);
 					if (variable == null)
 						throw new RuntimeException("Invalid variable name: " + name
 								+ "; couldn't find a variable with the specified name.");
