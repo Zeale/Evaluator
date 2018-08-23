@@ -75,6 +75,11 @@ public class VariableMap extends HashSet<Variable<?>> {
 			this.value = value;
 		}
 
+		@Override
+		public String toString() {
+			return value + "";
+		}
+
 		public boolean isModifiable() {
 			return modifiable;
 		}
