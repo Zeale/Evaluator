@@ -7,8 +7,9 @@ import java.util.List;
 import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.types.Data;
 
-public class Equation<T> implements Term<T> {
+public class Equation<T extends Data<?>> implements Term<T> {
 
 	private final List<Statement> assignments = new LinkedList<>();
 	private ChainTerm<T> expression;

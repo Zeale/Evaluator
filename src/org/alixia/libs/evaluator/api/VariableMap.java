@@ -4,10 +4,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import org.alixia.libs.evaluator.api.VariableMap.Variable;
+import org.alixia.libs.evaluator.api.types.Data;
+import org.alixia.libs.evaluator.api.types.NumericData;
 
 public class VariableMap extends HashSet<Variable<?>> {
 
-	public final Variable<Double> PI = new Variable<>("pi", Math.PI), E = new Variable<>("E", Math.E);
+	public final Variable<NumericData> PI = new Variable<>("pi", new NumericData(Math.PI)),
+			E = new Variable<>("E", new NumericData(Math.E));
 
 	/**
 	 * SUID
@@ -31,7 +34,7 @@ public class VariableMap extends HashSet<Variable<?>> {
 		}
 	}
 
-	public class Variable<T> {
+	public class Variable<T extends Data<?>> {
 
 		private T value;
 		private final boolean modifiable, ignoreCase;

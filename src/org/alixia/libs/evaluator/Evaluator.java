@@ -7,6 +7,7 @@ import static org.alixia.libs.evaluator.api.operators.StandardOperators.MODULUS;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.MULTIPLY;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.SUBTRACT;
 
+import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -21,9 +22,13 @@ import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.types.Data;
+import org.alixia.libs.evaluator.api.types.NumericData;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
-public class Evaluator<T extends java.lang.Number> {
+public class Evaluator {
+
+	public static final int MAXIMUM_BIG_DECIMAL_DIVISION_SCALE = 4679;
 
 	private final VariableMap variableMap = new VariableMap();
 
@@ -31,18 +36,26 @@ public class Evaluator<T extends java.lang.Number> {
 		return variableMap;
 	}
 
-	public static Evaluator<Double> getEvaluator() {
-		return new Evaluator<>();
+	public static Evaluator getEvaluator() {
+		return new Evaluator();
 	}
 
-	public static double solve(String input) {
-		return new Evaluator<>().solve(Spate.spate(input));
+	public static Data<?> solve(String input) {
+		return new Evaluator().solve(Spate.spate(input));
+	}
+
+	public static BigDecimal solveToNumber(String input) {
+		return solveToNumber(Spate.spate(input));
+	}
+
+	public static BigDecimal solveToNumber(Spate<Character> input) {
+		return new Evaluator().solve(input).toNumericData().evaluate();
 	}
 
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
-			System.out.println(new Evaluator<>().solve(Spate.spate(scanner.nextLine())));
+			System.out.println(solveToNumber(Spate.spate(scanner.nextLine())));
 		scanner.close();
 	}
 
@@ -177,14 +190,14 @@ public class Evaluator<T extends java.lang.Number> {
 				break;
 			chain += (char) c;
 		}
-		return new Evaluator<Double>(Spate.spate(chain)).chain();
+		return new Evaluator(Spate.spate(chain)).chain();
 	}
 
 	private Evaluator(Spate<Character> equation) {
 		this.equation = equation;
 	}
 
-	private NormalOperator<?, ?, ?> parseOperator() {
+	private NormalOperator parseOperator() {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
 
 		final int c = equation.peek();
@@ -282,7 +295,7 @@ public class Evaluator<T extends java.lang.Number> {
 						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator<>(Spate.spate(args.get(0))).chain().evaluate());
+					return function.evaluate(new Evaluator(Spate.spate(args.get(0))).chain().evaluate());
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
@@ -313,9 +326,8 @@ public class Evaluator<T extends java.lang.Number> {
 						// behavior will remain safe.
 						if (numb.charAt(numb.length() - 1) == '.')
 							throw new RuntimeException("Unnecessary decimal found.");
-						double number = (negate ? -1 : 1) * Double.parseDouble(numb);
-
-						return new org.alixia.libs.evaluator.api.terms.Number<>(number);
+						return new org.alixia.libs.evaluator.api.terms.Number(
+								new NumericData(new BigDecimal(numb).multiply(new BigDecimal((negate ? -1 : 1)))));
 					}
 					equation.skip();// We only go on to the next char
 					// (and move the spate's position over by one) if we are not done parsing this
@@ -334,6 +346,7 @@ public class Evaluator<T extends java.lang.Number> {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	private Term<?> parseTerm() {
 		Term<?> value = parseTermContents();
 		int c = box(equation.peek());
@@ -343,7 +356,12 @@ public class Evaluator<T extends java.lang.Number> {
 						&& ((Number) value.evaluate()).doubleValue() % 1 != 0)
 					throw new RuntimeException(
 							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
-				value = new FactorialTermWrapper(value);
+				try {
+					value = new FactorialTermWrapper((Term<NumericData>) value);
+				} catch (ClassCastException e) {
+					throw new RuntimeException(
+							"Factorial was applied to some data which was not applicable for factorial.");
+				}
 				// Right now, peek returns '!'. That's why we're in this if block.
 				equation.skip();// Skip over the exclamation point so that the next read operation
 								// (either next or peek) won't see it.
@@ -393,13 +411,13 @@ public class Evaluator<T extends java.lang.Number> {
 		}
 
 		final String finalizedEquation = equ;
-		return () -> ((Variable) term).setValue(new Evaluator<Number>().solve(Spate.spate(finalizedEquation)));
+		return () -> ((Variable) term).setValue(new Evaluator().solve(Spate.spate(finalizedEquation)));
 
 	}
 
-	public synchronized double solve(final Spate<Character> equation) {
+	public synchronized Data<?> solve(final Spate<Character> equation) {
 		this.equation = equation;
-		return (double) parseEquation().evaluate();
+		return parseEquation().evaluate();
 	}
 
 }
