@@ -18,18 +18,15 @@ public class TimeData extends SimpleData<LocalDateTime> {
 
 	public static LocalDateTime parse(String value) {
 		String[] times = value.split(":");
-		if (times.length == 7)
-			return LocalDateTime.of(Integer.parseInt(times[0]), Integer.parseInt(times[1]), Integer.parseInt(times[2]),
-					Integer.parseInt(times[3]), Integer.parseInt(times[4]), Integer.parseInt(times[5]),
-					Integer.parseInt(times[6]));
-		else if (times.length == 6)
-			return LocalDateTime.of(Integer.parseInt(times[0]), Integer.parseInt(times[1]), Integer.parseInt(times[2]),
-					Integer.parseInt(times[3]), Integer.parseInt(times[4]), Integer.parseInt(times[5]));
-		else if (times.length == 5)
-			return LocalDateTime.of(Integer.parseInt(times[0]), Integer.parseInt(times[1]), Integer.parseInt(times[2]),
-					Integer.parseInt(times[3]), Integer.parseInt(times[4]));
-		// TODO Improve this.
-		throw new RuntimeException("Invalid number of time parts. (Input: " + value + ")");
+
+		int[] timeValues = new int[] { 1970, 1, 1, 0, 0, 0, 0 };
+		if (times.length > timeValues.length)
+			throw new RuntimeException("Found too many time fragments while parsing a time. (Input: " + value + ")");
+		for (int i = times.length - 1; i >= 0; i--)
+			timeValues[i + (timeValues.length - times.length)] = Integer.parseInt(times[i]);
+
+		return LocalDateTime.of(timeValues[0], timeValues[1], timeValues[2], timeValues[3], timeValues[4],
+				timeValues[5], timeValues[6]);
 	}
 
 	@Override
