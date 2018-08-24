@@ -1,27 +1,32 @@
 package org.alixia.libs.evaluator.api.types;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
-public class TimeData extends SimpleData<Instant> {
+public class TimeData extends SimpleData<LocalDateTime> {
 
-	public TimeData(Instant value) {
+	// TODO Fix (i.e. apply new LocalDateTime stuff instead of using Instant stuff).
+
+	public TimeData(LocalDateTime value) {
 		super(value);
 	}
 
 	public TimeData(String value) {
-		this(value == null ? null : Instant.parse(value));
+		this(value == null ? null : LocalDateTime.parse(value));
 	}
 
 	@Override
 	public <DT extends Data<?>> TimeData cast(DT item) {
-		TimeData data = new TimeData((Instant) null);
+		TimeData data = new TimeData((LocalDateTime) null);
 		data.fromNumericData(item.toNumericData());
 		return data;
 	}
 
 	@Override
 	public NumericData toNumericData() {
-		return new NumericData(value.toEpochMilli() + "." + value.getNano());
+		return new NumericData(value.toEpochSecond(ZoneOffset.ofHours(0)) + "." + value.getNano());
 	}
 
 	@Override
@@ -33,7 +38,7 @@ public class TimeData extends SimpleData<Instant> {
 		Instant instant = time.contains(".")
 				? Instant.ofEpochSecond(millis / 1000, Long.parseLong(time.substring(endMillis + 1)))
 				: Instant.ofEpochMilli(millis);
-		value = instant;
+		value = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
 	}
 
 	@Override
