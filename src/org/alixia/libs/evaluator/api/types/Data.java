@@ -18,5 +18,7 @@ public interface Data<T> {
 	Data<T> clone();
 
 	T evaluate();
+	
+	String toStringValue();
 
 }

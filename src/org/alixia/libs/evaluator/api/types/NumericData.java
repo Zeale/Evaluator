@@ -47,4 +47,9 @@ public final class NumericData extends SimpleData<BigDecimal> {
 		return new NumericData(value);
 	}
 
+	@Override
+	public String toStringValue() {
+		return value.toString();
+	}
+
 }

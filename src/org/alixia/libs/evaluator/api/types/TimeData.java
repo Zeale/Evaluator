@@ -63,4 +63,10 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		return new TimeData(value);
 	}
 
+	@Override
+	public String toStringValue() {
+		return value.getYear() + ":" + value.getMonthValue() + ":" + value.getDayOfMonth() + ":" + value.getHour() + ":"
+				+ value.getMinute() + ":" + value.getSecond() + ":" + value.getNano();
+	}
+
 }
