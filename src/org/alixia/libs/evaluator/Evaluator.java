@@ -8,6 +8,7 @@ import static org.alixia.libs.evaluator.api.operators.StandardOperators.MULTIPLY
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.SUBTRACT;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -435,6 +436,28 @@ public class Evaluator {
 	public synchronized Data<?> solve(final Spate<Character> equation) {
 		this.equation = equation;
 		return parseEquation().evaluate();
+	}
+
+	public static BigDecimal roundBigDecimal(String decimal) {
+		int i = decimal.indexOf('.');
+		if (i == -1)
+			return new BigDecimal(decimal);
+		int firstZero = -1;
+		for (; i < decimal.length(); i++) {
+			if (firstZero == -1)
+				if (decimal.charAt(i) == '0')
+					firstZero = i;
+				else
+					;
+			else if (decimal.charAt(i) != '0')
+				firstZero = -1;
+		}
+		return new BigDecimal(firstZero == -1 ? decimal : decimal.substring(0, firstZero));
+	}
+
+	public static BigDecimal divideSafely(BigDecimal first, BigDecimal second) {
+		return roundBigDecimal(
+				first.divide(second, MAXIMUM_BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP).toString());
 	}
 
 }
