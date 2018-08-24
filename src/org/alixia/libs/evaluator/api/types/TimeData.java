@@ -12,14 +12,24 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		super(value);
 	}
 
-	public static void main(String[] args) {
-		TimeData td = new TimeData((LocalDateTime) null);
-		td.fromNumericData(new NumericData(200000.887698798));
-		System.out.println(td.evaluate());
+	public TimeData(String value) {
+		this(value == null ? null : parse(value));
 	}
 
-	public TimeData(String value) {
-		this(value == null ? null : LocalDateTime.parse(value));
+	public static LocalDateTime parse(String value) {
+		String[] times = value.split(":");
+		if (times.length == 7)
+			return LocalDateTime.of(Integer.parseInt(times[0]), Integer.parseInt(times[1]), Integer.parseInt(times[2]),
+					Integer.parseInt(times[3]), Integer.parseInt(times[4]), Integer.parseInt(times[5]),
+					Integer.parseInt(times[6]));
+		else if (times.length == 6)
+			return LocalDateTime.of(Integer.parseInt(times[0]), Integer.parseInt(times[1]), Integer.parseInt(times[2]),
+					Integer.parseInt(times[3]), Integer.parseInt(times[4]), Integer.parseInt(times[5]));
+		else if (times.length == 5)
+			return LocalDateTime.of(Integer.parseInt(times[0]), Integer.parseInt(times[1]), Integer.parseInt(times[2]),
+					Integer.parseInt(times[3]), Integer.parseInt(times[4]));
+		// TODO Improve this.
+		throw new RuntimeException("Invalid number of time parts. (Input: " + value + ")");
 	}
 
 	@Override
