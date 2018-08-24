@@ -1,8 +1,7 @@
 package org.alixia.libs.evaluator.api.types;
 
-import java.time.Instant;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 public class TimeData extends SimpleData<LocalDateTime> {
@@ -11,6 +10,12 @@ public class TimeData extends SimpleData<LocalDateTime> {
 
 	public TimeData(LocalDateTime value) {
 		super(value);
+	}
+
+	public static void main(String[] args) {
+		TimeData td = new TimeData((LocalDateTime) null);
+		td.fromNumericData(new NumericData(200000.887698798));
+		System.out.println(td.evaluate());
 	}
 
 	public TimeData(String value) {
@@ -32,13 +37,18 @@ public class TimeData extends SimpleData<LocalDateTime> {
 	@Override
 	public void fromNumericData(NumericData data) {
 		String time = data.evaluate() + "";
-		int endMillis = time.indexOf('.') == -1 ? time.length() : time.indexOf('.');
-		long millis = Long.parseLong(time.substring(0, endMillis));
+		int endSecs = time.indexOf('.') == -1 ? time.length() : time.indexOf('.');
+		long secs = Long.parseLong(time.substring(0, endSecs));
 		// TODO Improve.
-		Instant instant = time.contains(".")
-				? Instant.ofEpochSecond(millis / 1000, Long.parseLong(time.substring(endMillis + 1)))
-				: Instant.ofEpochMilli(millis);
-		value = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+		int endpoint = time.length() - endSecs >= 10 ? endSecs + 10 : time.length();
+		try {
+			value = LocalDateTime.ofEpochSecond(secs,
+					time.contains(".") ? Integer.parseInt(time.substring(endSecs + 1, endpoint)) : 0,
+					ZoneOffset.ofHours(0));
+		} catch (DateTimeException | NumberFormatException e) {
+			throw new RuntimeException(
+					"The given number is too large to be converted into a time. (Number: " + time + ")");
+		}
 	}
 
 	@Override
