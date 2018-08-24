@@ -322,6 +322,7 @@ public class Evaluator {
 								throw new RuntimeException("Encountered multiple decimal points in a number.");
 							else
 								break OUTER;
+							equation.skip();
 						}
 					} else if (Character.isDigit(c))
 						content += (char) c;
@@ -338,10 +339,12 @@ public class Evaluator {
 									content += ':';
 							else
 								return Term.wrap(new TimeData(content));
+							equation.skip();
 						}
 					} else {
 						break;
 					}
+					equation.skip();
 				}
 				// If an unexpected char is found, assume end of term. This may be changed
 				// later, but, until then, with the addition of operators later on, this
