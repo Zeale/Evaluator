@@ -24,6 +24,7 @@ import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.TimeData;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator {
@@ -307,36 +308,49 @@ public class Evaluator {
 					return variable::getValue;
 				}
 
-			} else if (Character.isDigit(c) || c == '.') {// Parse Number
-				String numb = "";
-				boolean encounteredDecimal = false;
-				while (true) {
+			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
+				String content = "";
+				OUTER: while (true) {
 					c = box(equation.peek());
-					if (c == '.') {
-						if (encounteredDecimal)
-							throw new RuntimeException("Encountered multiple decimal points in a number.");
-						encounteredDecimal = true;
-						numb += (char) c;
+					if (c == '.') {// Parse Number
+						content += '.';
+						while (true) {
+							c = box(equation.peek());
+							if (Character.isDigit(c))
+								content += (char) c;
+							else if (c == '.')
+								throw new RuntimeException("Encountered multiple decimal points in a number.");
+							else
+								break OUTER;
+						}
 					} else if (Character.isDigit(c))
-						numb += (char) c;
-					else {
-
-						// If an unexpected char is found, assume end of term. This may be changed
-						// later, but, until then, with the addition of operators later on, this
-						// behavior will remain safe.
-						if (numb.charAt(numb.length() - 1) == '.')
-							throw new RuntimeException("Unnecessary decimal found.");
-						return new org.alixia.libs.evaluator.api.terms.Number(
-								new NumericData(new BigDecimal(numb).multiply(new BigDecimal((negate ? -1 : 1)))));
+						content += (char) c;
+					else if (c == ':') {// Parse Time
+						while (true) {
+							c = box(equation.peek());
+							if (Character.isDigit(c))
+								content += (char) c;
+							else if (c == ':')
+								if (content.charAt(content.length() - 1) == ':')
+									throw new RuntimeException(
+											"Duplicate, tandem colon found while parsing a time value.");
+								else
+									content += ':';
+							else
+								return Term.wrap(new TimeData(content));
+						}
+					} else {
+						break;
 					}
-					equation.skip();// We only go on to the next char
-					// (and move the spate's position over by one) if we are not done parsing this
-					// term. This way, this method completes with the spate's position right before
-					// the next operator's first char. We need to finish one char before the next
-					// thing we need to parse, bc I'm an idiot and I didn't add a "curr()" method to
-					// the Spate class (I didn't want to force some Spates that are built on top of
-					// other APIs to have to cache the current character they are on).
 				}
+				// If an unexpected char is found, assume end of term. This may be changed
+				// later, but, until then, with the addition of operators later on, this
+				// behavior will remain safe.
+				if (content.charAt(content.length() - 1) == '.')
+					throw new RuntimeException("Unnecessary decimal found.");
+				return new org.alixia.libs.evaluator.api.terms.Number(
+						new NumericData(new BigDecimal(content).multiply(new BigDecimal((negate ? -1 : 1)))));
+
 			} else if (c == -1)
 				throw new RuntimeException("Expected a term but found the end of the equation.");
 			else if (!Character.isWhitespace(c))
