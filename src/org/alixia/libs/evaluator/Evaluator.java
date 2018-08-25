@@ -442,7 +442,7 @@ public class Evaluator {
 		return parseEquation().evaluate();
 	}
 
-	public static BigDecimal roundBigDecimal(String decimal) {
+	public static BigDecimal roundBigDecimal_old(String decimal) {
 		int i = decimal.indexOf('.');
 		if (i == -1)
 			return new BigDecimal(decimal);
@@ -459,9 +459,25 @@ public class Evaluator {
 		return new BigDecimal(firstZero == -1 ? decimal : decimal.substring(0, firstZero));
 	}
 
+	/**
+	 * Strips the trailing zeros off of a {@link BigDecimal}, and returns a new
+	 * {@link BigDecimal} representing the old one without the extra zeros.
+	 * 
+	 * @param decimal The decimal to strip.
+	 * @return A new {@link BigDecimal} without excess zeroes.
+	 * 
+	 *         Yes this function is named badly.
+	 */
+	public static BigDecimal roundBigDecimal(BigDecimal decimal) {
+		return decimal.stripTrailingZeros();
+	}
+
+	public static BigDecimal roundBigDecimal(String decimal) {
+		return roundBigDecimal(new BigDecimal(decimal));
+	}
+
 	public static BigDecimal divideSafely(BigDecimal first, BigDecimal second) {
-		return roundBigDecimal(
-				first.divide(second, MAXIMUM_BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP).toString());
+		return roundBigDecimal(first.divide(second, MAXIMUM_BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP));
 	}
 
 }
