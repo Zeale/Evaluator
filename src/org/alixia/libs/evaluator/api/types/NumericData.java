@@ -9,16 +9,16 @@ public final class NumericData extends SimpleData<BigDecimal> {
 	}
 
 	public NumericData(Number value) {
-		this(value.toString());
+		this(value == null ? null : value.toString());
 	}
 
 	public NumericData(String value) {
-		this(new BigDecimal(value));
+		this(value == null ? null : new BigDecimal(value));
 	}
 
 	@Override
-	public <DT extends Data<?>> BigDecimal cast(DT item) {
-		return null;
+	public <DT extends Data<?>> NumericData cast(DT item) {
+		return item.toNumericData();
 	}
 
 	/**
@@ -45,6 +45,11 @@ public final class NumericData extends SimpleData<BigDecimal> {
 	@Override
 	public NumericData clone() {
 		return new NumericData(value);
+	}
+
+	@Override
+	public String toStringValue() {
+		return value.toString();
 	}
 
 }

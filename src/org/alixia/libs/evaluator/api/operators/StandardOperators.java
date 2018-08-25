@@ -1,21 +1,40 @@
 package org.alixia.libs.evaluator.api.operators;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.math.BigInteger;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.BiFunction;
 
 import org.alixia.libs.evaluator.Evaluator;
+import org.alixia.libs.evaluator.api.operators.StandardOperators.OperatorFunction.Handle;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.TimeData;
 
 public enum StandardOperators implements NormalOperator, Precedented {
-	ADD((BigDecimalHandler) BigDecimal::add, 1), SUBTRACT((BigDecimalHandler) BigDecimal::subtract, 1),
-	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) (f, s) -> {
-		return roundBigDecimal(
-				f.divide(s, Evaluator.MAXIMUM_BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP).toString());
-	}, 2), EXPONENTIATION((BigDecimalHandler) (a, b) -> a.pow(b.intValue()), 3),
+	ADD(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::add),
+			new Handle<>(TimeData.class, (t, u) -> {
+				BigDecimal value = u.toNumericData().evaluate();
+				return new TimeData(t.evaluate().plusSeconds(getFront(value).longValue()).plusNanos(getBack(value)));
+			})), 1),
+	SUBTRACT(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::subtract),
+			new Handle<>(TimeData.class, (t, u) -> {
+				BigDecimal value = u.toNumericData().evaluate();
+				return new TimeData(t.evaluate().plusSeconds(-getFront(value).longValue()).plusNanos(-getBack(value)));
+			})), 1),
+	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
+	EXPONENTIATION((BigDecimalHandler) (a, b) -> a.pow(b.intValue()), 3),
 	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2);
+	public static BigInteger getFront(BigDecimal number) {
+		return number.toBigInteger();
+	}
+
+	public static long getBack(BigDecimal number) {
+		number = Evaluator.roundBigDecimal(number);// Strip trailing zeros.
+		return number.remainder(BigDecimal.ONE).movePointRight(number.scale()).abs().toBigInteger().longValue();
+	}
 
 	private final BiFunction<Data<?>, Data<?>, Data<?>> function;
 
@@ -45,21 +64,70 @@ public enum StandardOperators implements NormalOperator, Precedented {
 		BigDecimal apply(BigDecimal first, BigDecimal second);
 	}
 
-	public static BigDecimal roundBigDecimal(String decimal) {
-		int i = decimal.indexOf('.');
-		if (i == -1)
-			return new BigDecimal(decimal);
-		int firstZero = -1;
-		for (; i < decimal.length(); i++) {
-			if (firstZero == -1)
-				if (decimal.charAt(i) == '0')
-					firstZero = i;
-				else
-					;
-			else if (decimal.charAt(i) != '0')
-				firstZero = -1;
+	public static final class OperatorFunction implements BiFunction<Data<?>, Data<?>, Data<?>> {
+
+		private final List<Handle<?>> handles = new LinkedList<>();
+		private final Handle<NumericData> numberHandler;
+
+		public OperatorFunction(Handle<NumericData> numberHandler, Handle<?>... others) {
+			this.numberHandler = numberHandler;
+			for (Handle<?> h : others) {
+				if (handles.contains(h) || h.cls == numberHandler.cls)
+					throw new RuntimeException("This operator already contains a handle for the type, " + h.cls
+							+ ". Violating handle: " + h + ".");
+				handles.add(h);
+			}
 		}
-		return new BigDecimal(firstZero == -1 ? decimal : decimal.substring(0, firstZero));
+
+		public static final class Handle<DT extends Data<?>> {
+			private final Class<DT> cls;
+			private final BiFunction<? super DT, Data<?>, Data<?>> function;
+
+			public Handle(Class<DT> cls, BiFunction<? super DT, Data<?>, Data<?>> function) {
+				this.cls = cls;
+				this.function = function;
+			}
+
+			@Override
+			public boolean equals(Object obj) {
+				return obj instanceof Handle && ((Handle<?>) obj).cls == cls;
+			}
+
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Data<?> apply(Data<?> t, Data<?> u) {
+			Class<?> tType = t.getClass();
+			List<Handle<?>> possibleHandles = new LinkedList<>();
+
+			for (Handle<?> h : handles)
+				if (tType.isAssignableFrom(h.cls)) {
+					possibleHandles.add(h);
+				}
+
+			Handle<?> selectedHandle = numberHandler;
+
+			if (possibleHandles.size() == 1)
+				selectedHandle = possibleHandles.get(0);
+			else
+				OUTER: for (Handle<?> h0 : possibleHandles) {
+					for (Handle<?> h1 : possibleHandles) {
+						if (h0 == h1)
+							continue;
+						if (h0.cls.isAssignableFrom(h1.cls))
+							continue OUTER;
+					}
+					selectedHandle = h0;
+					break;
+				}
+
+			if (selectedHandle == numberHandler)
+				numberHandler.function.apply(t.toNumericData(), u.toNumericData());
+
+			return ((Handle<Data<?>>) selectedHandle).function.apply(selectedHandle.cls.cast(t), u);
+		}
+
 	}
 
 }

@@ -14,4 +14,9 @@ public abstract class SimpleData<T> implements Data<T> {
 
 	@Override
 	public abstract SimpleData<T> clone();
+
+	@Override
+	public final String toString() {
+		return toStringValue();
+	}
 }

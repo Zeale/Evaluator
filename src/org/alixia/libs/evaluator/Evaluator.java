@@ -8,6 +8,7 @@ import static org.alixia.libs.evaluator.api.operators.StandardOperators.MULTIPLY
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.SUBTRACT;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -24,6 +25,7 @@ import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.TimeData;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator {
@@ -44,6 +46,10 @@ public class Evaluator {
 		return new Evaluator().solve(Spate.spate(input));
 	}
 
+	public static String solveToString(String input) {
+		return solve(input).toStringValue();
+	}
+
 	public static BigDecimal solveToNumber(String input) {
 		return solveToNumber(Spate.spate(input));
 	}
@@ -55,7 +61,7 @@ public class Evaluator {
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
-			System.out.println(solveToNumber(Spate.spate(scanner.nextLine())));
+			System.out.println(solveToString(scanner.nextLine()));
 		scanner.close();
 	}
 
@@ -307,36 +313,53 @@ public class Evaluator {
 					return variable::getValue;
 				}
 
-			} else if (Character.isDigit(c) || c == '.') {// Parse Number
-				String numb = "";
-				boolean encounteredDecimal = false;
-				while (true) {
+			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
+				String content = "";
+				OUTER: while (true) {
 					c = box(equation.peek());
-					if (c == '.') {
-						if (encounteredDecimal)
-							throw new RuntimeException("Encountered multiple decimal points in a number.");
-						encounteredDecimal = true;
-						numb += (char) c;
+					if (c == '.') {// Parse Number
+						content += '.';
+						equation.skip();
+						while (true) {
+							c = box(equation.peek());
+							if (Character.isDigit(c))
+								content += (char) c;
+							else if (c == '.')
+								throw new RuntimeException("Encountered multiple decimal points in a number.");
+							else
+								break OUTER;
+							equation.skip();
+						}
 					} else if (Character.isDigit(c))
-						numb += (char) c;
-					else {
-
-						// If an unexpected char is found, assume end of term. This may be changed
-						// later, but, until then, with the addition of operators later on, this
-						// behavior will remain safe.
-						if (numb.charAt(numb.length() - 1) == '.')
-							throw new RuntimeException("Unnecessary decimal found.");
-						return new org.alixia.libs.evaluator.api.terms.Number(
-								new NumericData(new BigDecimal(numb).multiply(new BigDecimal((negate ? -1 : 1)))));
+						content += (char) c;
+					else if (c == ':') {// Parse Time
+						while (true) {
+							c = box(equation.peek());
+							if (Character.isDigit(c))
+								content += (char) c;
+							else if (c == ':')
+								if (content.charAt(content.length() - 1) == ':')
+									throw new RuntimeException(
+											"Duplicate, tandem colon found while parsing a time value.");
+								else
+									content += ':';
+							else
+								return Term.wrap(new TimeData(content));
+							equation.skip();
+						}
+					} else {
+						break;
 					}
-					equation.skip();// We only go on to the next char
-					// (and move the spate's position over by one) if we are not done parsing this
-					// term. This way, this method completes with the spate's position right before
-					// the next operator's first char. We need to finish one char before the next
-					// thing we need to parse, bc I'm an idiot and I didn't add a "curr()" method to
-					// the Spate class (I didn't want to force some Spates that are built on top of
-					// other APIs to have to cache the current character they are on).
+					equation.skip();
 				}
+				// If an unexpected char is found, assume end of term. This may be changed
+				// later, but, until then, with the addition of operators later on, this
+				// behavior will remain safe.
+				if (content.charAt(content.length() - 1) == '.')
+					throw new RuntimeException("Unnecessary decimal found.");
+				return new org.alixia.libs.evaluator.api.terms.Number(
+						new NumericData(new BigDecimal(content).multiply(new BigDecimal((negate ? -1 : 1)))));
+
 			} else if (c == -1)
 				throw new RuntimeException("Expected a term but found the end of the equation.");
 			else if (!Character.isWhitespace(c))
@@ -350,10 +373,12 @@ public class Evaluator {
 	private Term<?> parseTerm() {
 		Term<?> value = parseTermContents();
 		int c = box(equation.peek());
-		if (Character.isWhitespace(c) || c == '!') {
-			if (!clearWhitespace(null)) {// The next char is not whitespace.
+		if (!clearWhitespace(null)) {// The next char is not whitespace.
+			c = box(equation.peek());
+			if (c == '!') {
 				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
-						&& ((Number) value.evaluate()).doubleValue() % 1 != 0)
+						&& ((org.alixia.libs.evaluator.api.terms.Number) value).evaluate().evaluate()
+								.remainder(BigDecimal.ONE).doubleValue() != 0)
 					throw new RuntimeException(
 							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
 				try {
@@ -418,6 +443,44 @@ public class Evaluator {
 	public synchronized Data<?> solve(final Spate<Character> equation) {
 		this.equation = equation;
 		return parseEquation().evaluate();
+	}
+
+	public static BigDecimal roundBigDecimal_old(String decimal) {
+		int i = decimal.indexOf('.');
+		if (i == -1)
+			return new BigDecimal(decimal);
+		int firstZero = -1;
+		for (; i < decimal.length(); i++) {
+			if (firstZero == -1)
+				if (decimal.charAt(i) == '0')
+					firstZero = i;
+				else
+					;
+			else if (decimal.charAt(i) != '0')
+				firstZero = -1;
+		}
+		return new BigDecimal(firstZero == -1 ? decimal : decimal.substring(0, firstZero));
+	}
+
+	/**
+	 * Strips the trailing zeros off of a {@link BigDecimal}, and returns a new
+	 * {@link BigDecimal} representing the old one without the extra zeros.
+	 * 
+	 * @param decimal The decimal to strip.
+	 * @return A new {@link BigDecimal} without excess zeroes.
+	 * 
+	 *         Yes this function is named badly.
+	 */
+	public static BigDecimal roundBigDecimal(BigDecimal decimal) {
+		return decimal.stripTrailingZeros();
+	}
+
+	public static BigDecimal roundBigDecimal(String decimal) {
+		return roundBigDecimal(new BigDecimal(decimal));
+	}
+
+	public static BigDecimal divideSafely(BigDecimal first, BigDecimal second) {
+		return roundBigDecimal(first.divide(second, MAXIMUM_BIG_DECIMAL_DIVISION_SCALE, RoundingMode.HALF_UP));
 	}
 
 }
