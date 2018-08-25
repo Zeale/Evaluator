@@ -375,7 +375,8 @@ public class Evaluator {
 		if (Character.isWhitespace(c) || c == '!') {
 			if (!clearWhitespace(null)) {// The next char is not whitespace.
 				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
-						&& ((Number) value.evaluate()).doubleValue() % 1 != 0)
+						&& ((org.alixia.libs.evaluator.api.terms.Number) value).evaluate().evaluate()
+								.remainder(BigDecimal.ONE).doubleValue() != 0)
 					throw new RuntimeException(
 							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
 				try {
