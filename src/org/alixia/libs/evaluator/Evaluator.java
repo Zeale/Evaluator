@@ -373,24 +373,26 @@ public class Evaluator {
 	private Term<?> parseTerm() {
 		Term<?> value = parseTermContents();
 		int c = box(equation.peek());
-		if (Character.isWhitespace(c) || c == '!') {
+		if (Character.isWhitespace(c))
 			if (!clearWhitespace(null)) {// The next char is not whitespace.
-				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
-						&& ((org.alixia.libs.evaluator.api.terms.Number) value).evaluate().evaluate()
-								.remainder(BigDecimal.ONE).doubleValue() != 0)
-					throw new RuntimeException(
-							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
-				try {
-					value = new FactorialTermWrapper((Term<NumericData>) value);
-				} catch (ClassCastException e) {
-					throw new RuntimeException(
-							"Factorial was applied to some data which was not applicable for factorial.");
+				c = box(equation.peek());
+				if (c == '!') {
+					if (value instanceof org.alixia.libs.evaluator.api.terms.Number
+							&& ((org.alixia.libs.evaluator.api.terms.Number) value).evaluate().evaluate()
+									.remainder(BigDecimal.ONE).doubleValue() != 0)
+						throw new RuntimeException(
+								"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
+					try {
+						value = new FactorialTermWrapper((Term<NumericData>) value);
+					} catch (ClassCastException e) {
+						throw new RuntimeException(
+								"Factorial was applied to some data which was not applicable for factorial.");
+					}
+					// Right now, peek returns '!'. That's why we're in this if block.
+					equation.skip();// Skip over the exclamation point so that the next read operation
+									// (either next or peek) won't see it.
 				}
-				// Right now, peek returns '!'. That's why we're in this if block.
-				equation.skip();// Skip over the exclamation point so that the next read operation
-								// (either next or peek) won't see it.
 			}
-		}
 
 		return value;
 
