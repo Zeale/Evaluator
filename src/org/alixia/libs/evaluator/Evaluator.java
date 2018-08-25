@@ -256,7 +256,7 @@ public class Evaluator {
 				while (true) {// Parse the type
 					c = box(equation.next());
 					if (Character.isLetter(c) || c == '.')
-						type += c;
+						type += (char) c;
 					else if (c == '>') {
 						break;
 					} else if (Character.isWhitespace(c)) {
