@@ -403,8 +403,9 @@ public class Evaluator {
 				// behavior will remain safe.
 				if (content.charAt(content.length() - 1) == '.')
 					throw new RuntimeException("Unnecessary decimal found.");
-				return new org.alixia.libs.evaluator.api.terms.Number(
+				term = new org.alixia.libs.evaluator.api.terms.Number(
 						new NumericData(new BigDecimal(content).multiply(new BigDecimal((negate ? -1 : 1)))));
+				break TERM_LOOP;
 
 			} else if (c == -1)
 				throw new RuntimeException("Expected a term but found the end of the equation.");
