@@ -271,6 +271,8 @@ public class Evaluator {
 				}
 
 				Class<? extends Data<?>> typeCls = typeMap.get(type);
+				if (typeCls == null)
+					throw new RuntimeException("Couldn't discern a type from the given reference: " + type + ".");
 				castList.add(typeCls);
 
 				continue TERM_LOOP;// This allows multiple casts to take place.
