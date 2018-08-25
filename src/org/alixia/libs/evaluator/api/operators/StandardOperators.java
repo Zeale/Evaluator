@@ -1,20 +1,36 @@
 package org.alixia.libs.evaluator.api.operators;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
 
 import org.alixia.libs.evaluator.Evaluator;
+import org.alixia.libs.evaluator.api.operators.StandardOperators.OperatorFunction.Handle;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.TimeData;
 
 public enum StandardOperators implements NormalOperator, Precedented {
-	ADD((BigDecimalHandler) BigDecimal::add, 1), SUBTRACT((BigDecimalHandler) BigDecimal::subtract, 1),
-	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
+	ADD(new OperatorFunction(new Handle<NumericData>(NumericData.class, (BigDecimalHandler) BigDecimal::add),
+			new Handle<TimeData>(TimeData.class, (t, u) -> {
+				BigDecimal value = u.toNumericData().evaluate();
+				return new TimeData(t.evaluate().plusSeconds(getFront(value).longValue()).plusNanos(getBack(value)));
+			})), 1),
+	SUBTRACT((BigDecimalHandler) BigDecimal::subtract, 1), MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2),
+	DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
 	EXPONENTIATION((BigDecimalHandler) (a, b) -> a.pow(b.intValue()), 3),
 	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2);
+	public static BigInteger getFront(BigDecimal number) {
+		return number.toBigInteger();
+	}
+
+	public static long getBack(BigDecimal number) {
+		number = Evaluator.roundBigDecimal(number);// Strip trailing zeros.
+		return number.remainder(BigDecimal.ONE).movePointRight(number.scale()).abs().toBigInteger().longValue();
+	}
 
 	private final BiFunction<Data<?>, Data<?>, Data<?>> function;
 
@@ -61,9 +77,9 @@ public enum StandardOperators implements NormalOperator, Precedented {
 
 		public static final class Handle<DT extends Data<?>> {
 			private final Class<DT> cls;
-			private final BiFunction<DT, Data<?>, Data<?>> function;
+			private final BiFunction<? super DT, Data<?>, Data<?>> function;
 
-			public Handle(Class<DT> cls, BiFunction<DT, Data<?>, Data<?>> function) {
+			public Handle(Class<DT> cls, BiFunction<? super DT, Data<?>, Data<?>> function) {
 				this.cls = cls;
 				this.function = function;
 			}
