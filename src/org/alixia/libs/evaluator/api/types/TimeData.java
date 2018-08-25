@@ -7,10 +7,22 @@ import java.util.Arrays;
 
 public class TimeData extends SimpleData<LocalDateTime> {
 
+	public final static TimeData getTimeZero() {
+		return new TimeData(LocalDateTime.of(1970, 1, 1, 0, 0, 0, 0));
+	}
+
+	private final static int[] TIME_ZERO_FRAGMENT_ARRAY = getTimeZero().toArray();
+
 	// TODO Fix (i.e. apply new LocalDateTime stuff instead of using Instant stuff).
 
 	public TimeData(LocalDateTime value) {
 		super(value);
+	}
+
+	public int[] toArray() {
+		LocalDateTime time = evaluate();
+		return new int[] { time.getYear(), time.getMonthValue(), time.getDayOfMonth(), time.getHour(), time.getMinute(),
+				time.getSecond(), time.getNano() };
 	}
 
 	public TimeData(String value) {
@@ -20,7 +32,7 @@ public class TimeData extends SimpleData<LocalDateTime> {
 	public static final LocalDateTime parseOld(String value) {
 		String[] times = value.split(":");
 
-		int[] timeValues = new int[] { 1970, 1, 1, 0, 0, 0, 0 };
+		int[] timeValues = TIME_ZERO_FRAGMENT_ARRAY;
 		if (times.length > timeValues.length)
 			throw new RuntimeException("Found too many time fragments while parsing a time. (Input: " + value + ")");
 		for (int i = times.length - 1; i >= 0; i--)
