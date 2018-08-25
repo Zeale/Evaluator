@@ -157,10 +157,6 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		return new TimeData(value);
 	}
 
-	public static void main(String[] args) {
-		System.out.println(new TimeData("5:0:0:3"));
-	}
-
 	private static final int DEFAULT_YEAR_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[0],
 			DEFAULT_MONTH_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[1], DEFAULT_DAY_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[2],
 			DEFAULT_HOUR_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[3], DEFAULT_MINUTE_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[4],
