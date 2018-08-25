@@ -319,6 +319,7 @@ public class Evaluator {
 					c = box(equation.peek());
 					if (c == '.') {// Parse Number
 						content += '.';
+						equation.skip();
 						while (true) {
 							c = box(equation.peek());
 							if (Character.isDigit(c))
