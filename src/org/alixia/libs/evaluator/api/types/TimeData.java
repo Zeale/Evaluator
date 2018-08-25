@@ -118,7 +118,8 @@ public class TimeData extends SimpleData<LocalDateTime> {
 			return LocalDateTime.of(timeValues[0], timeValues[1], timeValues[2], timeValues[3], timeValues[4],
 					timeValues[5], timeValues[6]);
 		} catch (DateTimeException e) {
-			throw new RuntimeException("Invalid values were supplied for a time." + e.getMessage(), e);
+			throw new RuntimeException(
+					"Invalid values were supplied for a time. Time parse error message: " + e.getMessage(), e);
 		}
 	}
 
