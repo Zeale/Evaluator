@@ -51,7 +51,13 @@ public interface Data<T> {
 	Data<T> clone();
 
 	T evaluate();
-	
+
 	String toStringValue();
+
+	@SuppressWarnings("unchecked")
+	static <CT, CDT extends Data<CT>, ODT extends Data<?>> CDT cast(ODT data, Class<CDT> castType)
+			throws InstantiationException, IllegalAccessException {
+		return (CDT) castType.newInstance().cast(data);
+	}
 
 }
