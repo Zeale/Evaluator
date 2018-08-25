@@ -2,7 +2,7 @@ package org.alixia.libs.evaluator.api.types;
 
 public interface Data<T> {
 
-	<DT extends Data<?>> T cast(DT item);
+	<DT extends Data<?>> Data<T> cast(DT item);
 
 	NumericData toNumericData();
 
@@ -18,5 +18,7 @@ public interface Data<T> {
 	Data<T> clone();
 
 	T evaluate();
+	
+	String toStringValue();
 
 }
