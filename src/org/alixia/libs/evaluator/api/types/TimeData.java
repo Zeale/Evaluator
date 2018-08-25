@@ -7,11 +7,11 @@ import java.util.Arrays;
 
 public class TimeData extends SimpleData<LocalDateTime> {
 
-	public final static TimeData getTimeZero() {
+	public final static TimeData getEpoch() {
 		return new TimeData(LocalDateTime.of(1970, 1, 1, 0, 0, 0, 0));
 	}
 
-	private final static int[] TIME_ZERO_FRAGMENT_ARRAY = getTimeZero().toArray();
+	private final static int[] EPOCH_TIME_FRAGMENT_ARRAY = getEpoch().toArray();
 
 	// TODO Fix (i.e. apply new LocalDateTime stuff instead of using Instant stuff).
 
@@ -32,7 +32,7 @@ public class TimeData extends SimpleData<LocalDateTime> {
 	public static final LocalDateTime parseOld(String value) {
 		String[] times = value.split(":");
 
-		int[] timeValues = TIME_ZERO_FRAGMENT_ARRAY;
+		int[] timeValues = EPOCH_TIME_FRAGMENT_ARRAY;
 		if (times.length > timeValues.length)
 			throw new RuntimeException("Found too many time fragments while parsing a time. (Input: " + value + ")");
 		for (int i = times.length - 1; i >= 0; i--)
@@ -157,10 +157,40 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		return new TimeData(value);
 	}
 
+	public static void main(String[] args) {
+		System.out.println(new TimeData("5:0:0:3"));
+	}
+
+	private static final int DEFAULT_YEAR_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[0],
+			DEFAULT_MONTH_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[1], DEFAULT_DAY_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[2],
+			DEFAULT_HOUR_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[3], DEFAULT_MINUTE_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[4],
+			DEFAULT_NANOSECOND_VALUE = EPOCH_TIME_FRAGMENT_ARRAY[6];
+
 	@Override
 	public String toStringValue() {
-		return value.getYear() + ":" + value.getMonthValue() + ":" + value.getDayOfMonth() + ":" + value.getHour() + ":"
-				+ value.getMinute() + ":" + value.getSecond() + ":" + value.getNano();
+
+		// TODO Simplify this.
+
+		boolean year = true, month = true, day = true, hour = true, minute = true;
+		if (value.getYear() == DEFAULT_YEAR_VALUE) {
+			year = false;
+			if (value.getMonthValue() == DEFAULT_MONTH_VALUE) {
+				month = false;
+				if (value.getDayOfMonth() == DEFAULT_DAY_VALUE) {
+					day = false;
+					if (value.getHour() == DEFAULT_HOUR_VALUE) {
+						hour = false;
+						if (value.getMinute() == DEFAULT_MINUTE_VALUE)
+							minute = false;
+					}
+				}
+			}
+		}
+
+		return (year ? value.getYear() + ":" : "") + (month ? value.getMonthValue() + ":" : "")
+				+ (day ? value.getDayOfMonth() + ":" : "") + (hour ? value.getHour() + ":" : "")
+				+ (minute ? value.getMinute() + ":" : "") + value.getSecond()
+				+ (value.getNano() == DEFAULT_NANOSECOND_VALUE ? "" : ":" + value.getNano());
 	}
 
 }
