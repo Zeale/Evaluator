@@ -26,6 +26,7 @@ import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
 import org.alixia.libs.evaluator.api.types.TimeData;
+import org.alixia.libs.evaluator.api.types.casting.SimpleTypeMap;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator {
@@ -33,6 +34,11 @@ public class Evaluator {
 	public static final int MAXIMUM_BIG_DECIMAL_DIVISION_SCALE = 4679;
 
 	private final VariableMap variableMap = new VariableMap();
+	private final SimpleTypeMap typeMap = new SimpleTypeMap();
+	{
+		typeMap.new Type(NumericData.class, "number");
+		typeMap.new Type(TimeData.class, "time");
+	}
 
 	public VariableMap getVariableMap() {
 		return variableMap;
@@ -263,9 +269,9 @@ public class Evaluator {
 						break;
 					}
 				}
-				Class<? extends Data<?>> typeCls = null;// typeMap.get(type);
 
-				// TODO Set cast stuff.
+				Class<? extends Data<?>> typeCls = typeMap.get(type);
+				castList.add(typeCls);
 
 				continue TERM_LOOP;// This allows multiple casts to take place.
 
