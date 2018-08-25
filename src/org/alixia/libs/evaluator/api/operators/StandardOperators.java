@@ -1,6 +1,8 @@
 package org.alixia.libs.evaluator.api.operators;
 
 import java.math.BigDecimal;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.BiFunction;
 
 import org.alixia.libs.evaluator.Evaluator;
@@ -40,6 +42,72 @@ public enum StandardOperators implements NormalOperator, Precedented {
 		}
 
 		BigDecimal apply(BigDecimal first, BigDecimal second);
+	}
+
+	public static final class OperatorFunction implements BiFunction<Data<?>, Data<?>, Data<?>> {
+
+		private final List<Handle<?>> handles = new LinkedList<>();
+		private final Handle<NumericData> numberHandler;
+
+		public OperatorFunction(Handle<NumericData> numberHandler, Handle<?>... others) {
+			this.numberHandler = numberHandler;
+			for (Handle<?> h : others) {
+				if (handles.contains(h) || h.cls == numberHandler.cls)
+					throw new RuntimeException("This operator already contains a handle for the type, " + h.cls
+							+ ". Violating handle: " + h + ".");
+				handles.add(h);
+			}
+		}
+
+		public static final class Handle<DT extends Data<?>> {
+			private final Class<DT> cls;
+			private final BiFunction<DT, Data<?>, Data<?>> function;
+
+			public Handle(Class<DT> cls, BiFunction<DT, Data<?>, Data<?>> function) {
+				this.cls = cls;
+				this.function = function;
+			}
+
+			@Override
+			public boolean equals(Object obj) {
+				return obj instanceof Handle && ((Handle<?>) obj).cls == cls;
+			}
+
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Data<?> apply(Data<?> t, Data<?> u) {
+			Class<?> tType = t.getClass();
+			List<Handle<?>> possibleHandles = new LinkedList<>();
+
+			for (Handle<?> h : handles)
+				if (tType.isAssignableFrom(h.cls)) {
+					possibleHandles.add(h);
+				}
+
+			Handle<?> selectedHandle = numberHandler;
+
+			if (possibleHandles.size() == 1)
+				selectedHandle = possibleHandles.get(0);
+			else
+				OUTER: for (Handle<?> h0 : possibleHandles) {
+					for (Handle<?> h1 : possibleHandles) {
+						if (h0 == h1)
+							continue;
+						if (h0.cls.isAssignableFrom(h1.cls))
+							continue OUTER;
+					}
+					selectedHandle = h0;
+					break;
+				}
+
+			if (selectedHandle == numberHandler)
+				numberHandler.function.apply(t.toNumericData(), u.toNumericData());
+
+			return ((Handle<Data<?>>) selectedHandle).function.apply(selectedHandle.cls.cast(t), u);
+		}
+
 	}
 
 }
