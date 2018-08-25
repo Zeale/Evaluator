@@ -236,9 +236,36 @@ public class Evaluator {
 
 		int c;
 		boolean negate = false;
-		while (true) {
+		TERM_LOOP: while (true) {
 			c = box(equation.peek());
-			if (c == '+')// Force Positive
+			if (c == StandardWrapper.CHEVRONS.getOpener()) {
+				equation.skip();// Pass the opening chevron. Next 'peek()' will return the char after it.
+				clearWhitespace(
+						"Equation ended prematurely; expected a type to cast the following term to. No type, closing chevron, nor following term was found.");
+				String type = "";
+				while (true) {// Parse the type
+					c = box(equation.next());
+					if (Character.isLetter(c) || c == '.')
+						type += c;
+					else if (c == '>') {
+						break;
+					} else if (Character.isWhitespace(c)) {
+						clearWhitespace(
+								"Equation ended prematurely; expected a closing chevron, ('>'), to close a cast operation, and then the term that was being casted. Neither of those two things were found.");
+						if ((c = equation.next()) != '>')
+							throw new RuntimeException(
+									"Expected a closing chevron, ('>'), to close a cast operation after some whitespace. Instead, found the character "
+											+ c);
+						break;
+					}
+				}
+				Class<? extends Data<?>> typeCls = typeMap.get(type);
+
+				// TODO Set cast stuff.
+
+				continue TERM_LOOP;
+
+			} else if (c == '+')// Force Positive
 				negate = false;
 			else if (c == '-')// Flip Negativity
 				negate ^= true;
@@ -250,7 +277,8 @@ public class Evaluator {
 			} else if (Character.isLetter(c) || c == '_') {// Variable
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
-				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c) || c == ':') {// TODO Refine
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c) || c == ':') {// TODO
+																										// Refine
 					name += (char) c;
 					equation.skip();
 				}
