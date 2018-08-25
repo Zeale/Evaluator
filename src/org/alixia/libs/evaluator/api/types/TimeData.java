@@ -40,10 +40,6 @@ public class TimeData extends SimpleData<LocalDateTime> {
 
 	private final static int MONTH_THRESHOLD = 12, DAY_THRESHOLD = 31, HOUR_THRESHOLD = 23, SECOND_THRESHOLD = 59;
 
-	public static void main(String[] args) {
-		System.out.println(new TimeData(parse(new int[] { 61, 5 })));
-	}
-
 	private static LocalDateTime parse(int[] times) {
 		if (times == null || times.length == 0)
 			throw new RuntimeException("Can't parse an empty time fragment array.");
@@ -76,7 +72,7 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		final byte standardShift = (byte) (timeValues.length - times.length - (times.length == 7 ? 0 : 1));
 		byte shift = standardShift;// We try to parse so that the last value in times represents a second.
 
-		// YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, NANOSECOND
+		// YEAR, MONTH-12, DAY-31, HOUR-24, MINUTE-60, SECOND-60, NANOSECOND
 
 		if (times.length > 5 || times[0] > SECOND_THRESHOLD)
 			shift = 0;
@@ -86,10 +82,10 @@ public class TimeData extends SimpleData<LocalDateTime> {
 			// The default value for shift is such that the last number is the "seconds"
 			// value.
 			if (times.length == 5) {
-				if (times[0] > MONTH_THRESHOLD)
+				if (times[0] > MONTH_THRESHOLD || times[2] > HOUR_THRESHOLD)
 					shift = 0;
 			} else if (times.length == 4) {
-				if (times[0] > DAY_THRESHOLD)
+				if (times[0] > DAY_THRESHOLD)// shift -= 2, regardless of other values.
 					shift = 0;
 			} else if (times.length == 3) {
 				if (times[0] > HOUR_THRESHOLD)
@@ -106,8 +102,12 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		for (int i = 0; i < times.length; i++)
 			timeValues[i + shift] = times[i];
 
-		return LocalDateTime.of(timeValues[0], timeValues[1], timeValues[2], timeValues[3], timeValues[4],
-				timeValues[5], timeValues[6]);
+		try {
+			return LocalDateTime.of(timeValues[0], timeValues[1], timeValues[2], timeValues[3], timeValues[4],
+					timeValues[5], timeValues[6]);
+		} catch (DateTimeException e) {
+			throw new RuntimeException("Invalid values were supplied for a time." + e.getMessage(), e);
+		}
 	}
 
 	@Override
