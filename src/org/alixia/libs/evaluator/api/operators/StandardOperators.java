@@ -14,13 +14,17 @@ import org.alixia.libs.evaluator.api.types.NumericData;
 import org.alixia.libs.evaluator.api.types.TimeData;
 
 public enum StandardOperators implements NormalOperator, Precedented {
-	ADD(new OperatorFunction(new Handle<NumericData>(NumericData.class, (BigDecimalHandler) BigDecimal::add),
-			new Handle<TimeData>(TimeData.class, (t, u) -> {
+	ADD(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::add),
+			new Handle<>(TimeData.class, (t, u) -> {
 				BigDecimal value = u.toNumericData().evaluate();
 				return new TimeData(t.evaluate().plusSeconds(getFront(value).longValue()).plusNanos(getBack(value)));
 			})), 1),
-	SUBTRACT((BigDecimalHandler) BigDecimal::subtract, 1), MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2),
-	DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
+	SUBTRACT(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::subtract),
+			new Handle<>(TimeData.class, (t, u) -> {
+				BigDecimal value = u.toNumericData().evaluate();
+				return new TimeData(t.evaluate().plusSeconds(-getFront(value).longValue()).plusNanos(-getBack(value)));
+			})), 1),
+	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
 	EXPONENTIATION((BigDecimalHandler) (a, b) -> a.pow(b.intValue()), 3),
 	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2);
 	public static BigInteger getFront(BigDecimal number) {
