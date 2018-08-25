@@ -3,6 +3,7 @@ package org.alixia.libs.evaluator.api.types;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 
 public class TimeData extends SimpleData<LocalDateTime> {
 
@@ -16,7 +17,7 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		this(value == null ? null : parse(value));
 	}
 
-	public static LocalDateTime parse(String value) {
+	public static final LocalDateTime parseOld(String value) {
 		String[] times = value.split(":");
 
 		int[] timeValues = new int[] { 1970, 1, 1, 0, 0, 0, 0 };
@@ -24,6 +25,82 @@ public class TimeData extends SimpleData<LocalDateTime> {
 			throw new RuntimeException("Found too many time fragments while parsing a time. (Input: " + value + ")");
 		for (int i = times.length - 1; i >= 0; i--)
 			timeValues[i + (timeValues.length - times.length)] = Integer.parseInt(times[i]);
+
+		return LocalDateTime.of(timeValues[0], timeValues[1], timeValues[2], timeValues[3], timeValues[4],
+				timeValues[5], timeValues[6]);
+	}
+
+	public static LocalDateTime parse(String value) {
+		String[] times = value.split(":");
+		int[] values = new int[times.length];
+		for (int i = 0; i < times.length; i++)
+			values[i] = Integer.parseInt(times[i]);
+		return parse(values);
+	}
+
+	private final static int MONTH_THRESHOLD = 11, DAY_THRESHOLD = 31, HOUR_THRESHOLD = 23, SECOND_THRESHOLD = 59;
+
+	public static void main(String[] args) {
+		System.out.println(new TimeData(parse(new int[] { 2, 3, 2, 3, 2, 3, 2 })));
+	}
+
+	private static LocalDateTime parse(int[] times) {
+		if (times == null || times.length == 0)
+			throw new RuntimeException("Can't parse an empty time fragment array.");
+		// 1920:5:3 is 5/3/1920-00:00:00:000:000:000
+		// The above is because "1920" is too large to be an hour, a day, or a month, so
+		// we know it must be a year. Following the "year", is always the month, then
+		// the day, then the hour, etc.
+
+		// 1:3 is EPOCH-00:01:03:000:000:000
+		// This results because the right-most value is always parsed to be a second,
+		// unless we know that it can't be. In this case, one is a valid minute, and
+		// three is
+		// a valid second, so this evaluates to a total of 63 seconds (or one minute and
+		// three seconds). If the one was actually a 1340, we would know that it'd have
+		// to be a year. That would make the three a month.
+		int[] timeValues = new int[] { 1970, 1, 1, 0, 0, 0, 0 };
+
+		if (times.length > timeValues.length)
+			throw new RuntimeException("Found too many time fragments while parsing a time. (Parsed Input: "
+					+ Arrays.toString(times) + ")");
+
+		// To set yrs, shift must = 0.
+		final byte standardShift = (byte) (timeValues.length - times.length - (times.length == 7 ? 0 : 1));
+		byte shift = standardShift;// We try to parse so that the last value in times represents a second.
+
+		if (!(times[0] > SECOND_THRESHOLD || times.length == 7)) {
+			// times.length<7 && times[0] !> 59
+			if (times.length == 6) {
+				/*
+				 * The six numbers are either
+				 * 
+				 * YEAR, MONTH, DAY, HOUR, MINUTE, SECOND
+				 * 
+				 * or
+				 * 
+				 * MONTH, DAY, HOUR, MINUTE, SECOND, NANOSECOND
+				 */
+				if (times[0] > MONTH_THRESHOLD)// The first thing is too big to be a month, so it must be a year.
+					shift = 0;
+			} else if (times.length == 5) {
+				if (times[0] > MONTH_THRESHOLD)
+					shift = 0;
+			} else if (times.length == 4)
+				if (times[0] > HOUR_THRESHOLD)
+					shift = times[0] > DAY_THRESHOLD ? (byte) 0 : 2;
+				else
+					;
+			else if (times.length == 3)
+				;
+		}
+
+		int overhead = standardShift - shift;
+		if (overhead < 0)
+			throw new RuntimeException("Received " + overhead + " extra time fragments while parsing a time.");
+		for (int i = 0; i < times.length; i++) {
+			timeValues[i + shift] = times[i];
+		}
 
 		return LocalDateTime.of(timeValues[0], timeValues[1], timeValues[2], timeValues[3], timeValues[4],
 				timeValues[5], timeValues[6]);
