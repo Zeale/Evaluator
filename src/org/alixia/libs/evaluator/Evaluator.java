@@ -129,7 +129,7 @@ public class Evaluator {
 			c = box(equation.next());
 			if (c == -1)
 				return null;
-			else if (c == parentheses.getOpenner())
+			else if (c == parentheses.getOpener())
 				break;
 		}
 		meets++;
@@ -141,7 +141,7 @@ public class Evaluator {
 			if (c == -1)
 				throw new RuntimeException("Equation ends prematurely; a closing '" + parentheses.getCloser()
 						+ "' was expected for a function, but was not found.");
-			else if (c == parentheses.getOpenner())
+			else if (c == parentheses.getOpener())
 				meets++;
 			else if (c == parentheses.getCloser())
 				meets--;
@@ -172,7 +172,7 @@ public class Evaluator {
 			c = box(equation.next());
 			if (c == -1)
 				return null;
-			else if (c == parentheses.getOpenner())
+			else if (c == parentheses.getOpener())
 				break;
 		}
 		meets++;
@@ -181,7 +181,7 @@ public class Evaluator {
 			if (c == -1)
 				throw new RuntimeException("Equation ends prematurely; a closing '" + parentheses.getCloser()
 						+ "' was expected, but was not found.");
-			else if (c == parentheses.getOpenner())
+			else if (c == parentheses.getOpener())
 				meets++;
 			else if (c == parentheses.getCloser())
 				meets--;

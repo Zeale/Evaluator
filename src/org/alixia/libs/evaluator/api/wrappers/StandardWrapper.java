@@ -12,7 +12,7 @@ public enum StandardWrapper implements Wrapper {
 
 	public static StandardWrapper openValueOf(final char c) {
 		for (final StandardWrapper sw : StandardWrapper.values())
-			if (sw.getOpenner() == c)
+			if (sw.getOpener() == c)
 				return sw;
 		return null;
 	}
@@ -31,7 +31,7 @@ public enum StandardWrapper implements Wrapper {
 	}
 
 	@Override
-	public char getOpenner() {
+	public char getOpener() {
 		return openner;
 	}
 }
