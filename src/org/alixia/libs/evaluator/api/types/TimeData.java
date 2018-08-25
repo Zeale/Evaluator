@@ -19,6 +19,10 @@ public class TimeData extends SimpleData<LocalDateTime> {
 		super(value);
 	}
 
+	public TimeData() {
+		this((LocalDateTime) null);
+	}
+
 	public int[] toArray() {
 		LocalDateTime time = evaluate();
 		return new int[] { time.getYear(), time.getMonthValue(), time.getDayOfMonth(), time.getHour(), time.getMinute(),
@@ -125,7 +129,7 @@ public class TimeData extends SimpleData<LocalDateTime> {
 
 	@Override
 	public <DT extends Data<?>> TimeData cast(DT item) {
-		TimeData data = new TimeData((LocalDateTime) null);
+		TimeData data = new TimeData();
 		data.fromNumericData(item.toNumericData());
 		return data;
 	}

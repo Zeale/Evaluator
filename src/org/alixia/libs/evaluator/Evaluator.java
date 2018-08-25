@@ -26,6 +26,7 @@ import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
 import org.alixia.libs.evaluator.api.types.TimeData;
+import org.alixia.libs.evaluator.api.types.casting.SimpleTypeMap;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
 
 public class Evaluator {
@@ -33,6 +34,11 @@ public class Evaluator {
 	public static final int MAXIMUM_BIG_DECIMAL_DIVISION_SCALE = 4679;
 
 	private final VariableMap variableMap = new VariableMap();
+	private final SimpleTypeMap typeMap = new SimpleTypeMap();
+	{
+		typeMap.new Type(NumericData.class, "number");
+		typeMap.new Type(TimeData.class, "time");
+	}
 
 	public VariableMap getVariableMap() {
 		return variableMap;
@@ -234,11 +240,44 @@ public class Evaluator {
 		// non-whitepsace char.
 		clearWhitespace("The equation ended prematurely; another term was expected.");
 
+		List<Class<? extends Data<?>>> castList = new LinkedList<>();
+
+		Term<?> term;
+
 		int c;
 		boolean negate = false;
-		while (true) {
+		TERM_LOOP: while (true) {
 			c = box(equation.peek());
-			if (c == '+')// Force Positive
+			if (c == StandardWrapper.CHEVRONS.getOpener()) {
+				equation.skip();// Pass the opening chevron. Next 'peek()' will return the char after it.
+				clearWhitespace(
+						"Equation ended prematurely; expected a type to cast the following term to. No type, closing chevron: ('>'), nor following term, was found.");
+				String type = "";
+				while (true) {// Parse the type
+					c = box(equation.next());
+					if (Character.isLetter(c) || c == '.')
+						type += (char) c;
+					else if (c == '>') {
+						break;
+					} else if (Character.isWhitespace(c)) {
+						clearWhitespace(
+								"Equation ended prematurely; expected a closing chevron, ('>'), to close a cast operation, and then the term that was being casted. Neither of those two things were found.");
+						if ((c = equation.next()) != '>')
+							throw new RuntimeException(
+									"Expected a closing chevron, ('>'), to close a cast operation after some whitespace. Instead, found the character "
+											+ c);
+						break;
+					}
+				}
+
+				Class<? extends Data<?>> typeCls = typeMap.get(type);
+				if (typeCls == null)
+					throw new RuntimeException("Couldn't discern a type from the given reference: " + type + ".");
+				castList.add(typeCls);
+
+				continue TERM_LOOP;// This allows multiple casts to take place.
+
+			} else if (c == '+')// Force Positive
 				negate = false;
 			else if (c == '-')// Flip Negativity
 				negate ^= true;
@@ -246,11 +285,13 @@ public class Evaluator {
 				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
-				return nest;
+				term = nest;
+				break TERM_LOOP;
 			} else if (Character.isLetter(c) || c == '_') {// Variable
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
-				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c) || c == ':') {// TODO Refine
+				while ((c = box(equation.peek())) == '_' || Character.isLetterOrDigit(c) || c == ':') {// TODO
+																										// Refine
 					name += (char) c;
 					equation.skip();
 				}
@@ -301,7 +342,8 @@ public class Evaluator {
 						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator(Spate.spate(args.get(0))).chain().evaluate());
+					term = function.evaluate(new Evaluator(Spate.spate(args.get(0))).chain().evaluate());
+					break TERM_LOOP;
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
@@ -310,7 +352,8 @@ public class Evaluator {
 					if (variable == null)
 						throw new RuntimeException("Invalid variable name: " + name
 								+ "; couldn't find a variable with the specified name.");
-					return variable::getValue;
+					term = variable::getValue;
+					break TERM_LOOP;
 				}
 
 			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
@@ -343,8 +386,11 @@ public class Evaluator {
 											"Duplicate, tandem colon found while parsing a time value.");
 								else
 									content += ':';
-							else
-								return Term.wrap(new TimeData(content));
+							else {
+								term = Term.wrap(new TimeData(content));
+								break TERM_LOOP;
+							}
+
 							equation.skip();
 						}
 					} else {
@@ -357,8 +403,9 @@ public class Evaluator {
 				// behavior will remain safe.
 				if (content.charAt(content.length() - 1) == '.')
 					throw new RuntimeException("Unnecessary decimal found.");
-				return new org.alixia.libs.evaluator.api.terms.Number(
+				term = new org.alixia.libs.evaluator.api.terms.Number(
 						new NumericData(new BigDecimal(content).multiply(new BigDecimal((negate ? -1 : 1)))));
+				break TERM_LOOP;
 
 			} else if (c == -1)
 				throw new RuntimeException("Expected a term but found the end of the equation.");
@@ -366,6 +413,11 @@ public class Evaluator {
 				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
 		} // Leaves off before first digit.
+
+		for (Class<? extends Data<?>> c0 : castList)
+			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
+
+		return term;
 
 	}
 
