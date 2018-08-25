@@ -234,6 +234,10 @@ public class Evaluator {
 		// non-whitepsace char.
 		clearWhitespace("The equation ended prematurely; another term was expected.");
 
+		List<Class<? extends Data<?>>> castList = new LinkedList<>();
+
+		Term<?> term;
+
 		int c;
 		boolean negate = false;
 		TERM_LOOP: while (true) {
@@ -241,7 +245,7 @@ public class Evaluator {
 			if (c == StandardWrapper.CHEVRONS.getOpener()) {
 				equation.skip();// Pass the opening chevron. Next 'peek()' will return the char after it.
 				clearWhitespace(
-						"Equation ended prematurely; expected a type to cast the following term to. No type, closing chevron, nor following term was found.");
+						"Equation ended prematurely; expected a type to cast the following term to. No type, closing chevron: ('>'), nor following term, was found.");
 				String type = "";
 				while (true) {// Parse the type
 					c = box(equation.next());
@@ -259,11 +263,11 @@ public class Evaluator {
 						break;
 					}
 				}
-				Class<? extends Data<?>> typeCls = typeMap.get(type);
+				Class<? extends Data<?>> typeCls = null;// typeMap.get(type);
 
 				// TODO Set cast stuff.
 
-				continue TERM_LOOP;
+				continue TERM_LOOP;// This allows multiple casts to take place.
 
 			} else if (c == '+')// Force Positive
 				negate = false;
@@ -273,7 +277,8 @@ public class Evaluator {
 				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
-				return nest;
+				term = nest;
+				break TERM_LOOP;
 			} else if (Character.isLetter(c) || c == '_') {// Variable
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
@@ -329,7 +334,8 @@ public class Evaluator {
 						throw new RuntimeException("Not enough arguments given for the function: " + name + ".");
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
-					return function.evaluate(new Evaluator(Spate.spate(args.get(0))).chain().evaluate());
+					term = function.evaluate(new Evaluator(Spate.spate(args.get(0))).chain().evaluate());
+					break TERM_LOOP;
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
@@ -338,7 +344,8 @@ public class Evaluator {
 					if (variable == null)
 						throw new RuntimeException("Invalid variable name: " + name
 								+ "; couldn't find a variable with the specified name.");
-					return variable::getValue;
+					term = variable::getValue;
+					break TERM_LOOP;
 				}
 
 			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
@@ -371,8 +378,11 @@ public class Evaluator {
 											"Duplicate, tandem colon found while parsing a time value.");
 								else
 									content += ':';
-							else
-								return Term.wrap(new TimeData(content));
+							else {
+								term = Term.wrap(new TimeData(content));
+								break TERM_LOOP;
+							}
+
 							equation.skip();
 						}
 					} else {
@@ -394,6 +404,11 @@ public class Evaluator {
 				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
 		} // Leaves off before first digit.
+
+		for (Class<? extends Data<?>> c0 : castList)
+			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
+
+		return term;
 
 	}
 
