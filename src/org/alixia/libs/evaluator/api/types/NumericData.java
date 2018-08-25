@@ -8,6 +8,10 @@ public final class NumericData extends SimpleData<BigDecimal> {
 		super(value);
 	}
 
+	public NumericData() {
+		this((BigDecimal) null);
+	}
+
 	public NumericData(Number value) {
 		this(value == null ? null : value.toString());
 	}
