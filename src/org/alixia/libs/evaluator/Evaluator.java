@@ -46,6 +46,10 @@ public class Evaluator {
 		return new Evaluator().solve(Spate.spate(input));
 	}
 
+	public static String solveToString(String input) {
+		return solve(input).toStringValue();
+	}
+
 	public static BigDecimal solveToNumber(String input) {
 		return solveToNumber(Spate.spate(input));
 	}
@@ -57,7 +61,7 @@ public class Evaluator {
 	public static void main(final String[] args) {
 		final Scanner scanner = new Scanner(System.in);
 		while (scanner.hasNextLine())
-			System.out.println(solveToNumber(Spate.spate(scanner.nextLine())));
+			System.out.println(solveToString(scanner.nextLine()));
 		scanner.close();
 	}
 
