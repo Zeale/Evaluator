@@ -102,9 +102,8 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			List<Handle<?>> possibleHandles = new LinkedList<>();
 
 			for (Handle<?> h : handles)
-				if (tType.isAssignableFrom(h.cls)) {
+				if (h.cls.isAssignableFrom(tType))
 					possibleHandles.add(h);
-				}
 
 			Handle<?> selectedHandle = numberHandler;
 
