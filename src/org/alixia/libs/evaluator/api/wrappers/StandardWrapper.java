@@ -18,10 +18,10 @@ public enum StandardWrapper implements Wrapper {
 	}
 
 	// TODO Rename to "opener."
-	private final char openner, closer;
+	private final char opener, closer;
 
-	private StandardWrapper(final char openner, final char closer) {
-		this.openner = openner;
+	private StandardWrapper(final char opener, final char closer) {
+		this.opener = opener;
 		this.closer = closer;
 	}
 
@@ -32,6 +32,6 @@ public enum StandardWrapper implements Wrapper {
 
 	@Override
 	public char getOpener() {
-		return openner;
+		return opener;
 	}
 }
