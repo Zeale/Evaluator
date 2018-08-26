@@ -13,10 +13,6 @@ import org.alixia.libs.evaluator.api.types.Data;
 
 public class ChainTerm<T extends Data<?>> implements Term<T> {
 
-	public interface TriCombiner<I1, I2, I3, R> {
-		R combine(I1 input1, I2 input2, I3 input3);
-	}
-
 	public final class MathChain extends Chain<Term<T>, NormalOperator> {
 
 		private final Set<Precedence> precedences = new TreeSet<>(Collections.reverseOrder());
@@ -109,8 +105,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 					break;
 
 				if (pair.getSecond() instanceof Precedented && ((Precedented) pair.getSecond()).precedence().equals(i))
-					((Operator) pair.getSecond()).evaluate(chain, iterator.position(),
-							(ChainTerm<?>.MathChain.MathIterator) iterator);
+					((Operator) pair.getSecond()).evaluate(chain, (ChainTerm<?>.MathChain.MathIterator) iterator);
 			}
 
 		// TODO Take care of non-precedented operators.
@@ -118,8 +113,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 			final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
 			if (pair.isLast())
 				break;
-			((Operator) pair.getSecond()).evaluate(chain, iterator.position(),
-					(ChainTerm<?>.MathChain.MathIterator) iterator);
+			((Operator) pair.getSecond()).evaluate(chain, (ChainTerm<?>.MathChain.MathIterator) iterator);
 		}
 
 		if (!(chain.size() == 1))

@@ -7,7 +7,7 @@ public interface NormalOperator extends Operator {
 	Term<?> evaluate(Term<?> first, Term<?> second);
 
 	@Override
-	default void evaluate(ChainTerm<?>.MathChain chain, int position, ChainTerm<?>.MathChain.MathIterator iterator) {
+	default void evaluate(ChainTerm<?>.MathChain chain, ChainTerm<?>.MathChain.MathIterator iterator) {
 		iterator.combineCurrentWithLast();
 	}
 }
