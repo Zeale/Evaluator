@@ -40,6 +40,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 		}
 
 		public class MathIterator extends ChainIterator {
+
 			/**
 			 * <p>
 			 * This operation works if the previous {@link Pair}'s second item is a
@@ -78,6 +79,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 					skip();
 				}
 			}
+
 		}
 
 	}
@@ -98,14 +100,16 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 
 	@Override
 	public T evaluate() {
+
 		for (final Precedence i : chain.getPrecedences())
 			for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
 				final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
 				if (pair.isLast())// Signifies that we are at the last Pair in the Chain.
 					break;
-
-				if (pair.getSecond() instanceof Precedented && ((Precedented) pair.getSecond()).precedence().equals(i))
+				if (pair.getSecond() instanceof Precedented
+						&& ((Precedented) pair.getSecond()).precedence().equals(i)) {
 					((Operator) pair.getSecond()).evaluate(chain, (ChainTerm<?>.MathChain.MathIterator) iterator);
+				}
 			}
 
 		// TODO Take care of non-precedented operators.

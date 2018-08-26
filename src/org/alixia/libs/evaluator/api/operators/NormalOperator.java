@@ -8,6 +8,8 @@ public interface NormalOperator extends Operator {
 
 	@Override
 	default void evaluate(ChainTerm<?>.MathChain chain, ChainTerm<?>.MathChain.MathIterator iterator) {
+		iterator.skip();
 		iterator.combineCurrentWithLast();
+		iterator.skipBack();
 	}
 }

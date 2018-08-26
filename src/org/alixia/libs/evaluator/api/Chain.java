@@ -177,6 +177,10 @@ public class Chain<F, S> {
 			position++;
 		}
 
+		public void skipBack() {
+			position--;
+		}
+
 		/**
 		 * Returns the next item with<b>out</b> moving forward.
 		 * 
