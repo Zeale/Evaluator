@@ -4,9 +4,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 
-public class Chain<F, S> implements List<Chain<F, S>.Pair> {
+public class Chain<F, S> {
 
 	private final LinkedList<Pair> items = new LinkedList<>();
 
@@ -44,18 +43,15 @@ public class Chain<F, S> implements List<Chain<F, S>.Pair> {
 
 	}
 
-	@Override
 	public int size() {
 		return items.size();
 	}
 
-	@Override
 	public boolean isEmpty() {
 		// This should NEVER return true.
 		return items.isEmpty();
 	}
 
-	@Override
 	public boolean contains(Object o) {
 		if (o instanceof Chain.Pair)
 			return items.contains(o);
@@ -72,12 +68,10 @@ public class Chain<F, S> implements List<Chain<F, S>.Pair> {
 		return null;
 	}
 
-	@Override
 	public Object[] toArray() {
 		return items.toArray();
 	}
 
-	@Override
 	public <T> T[] toArray(T[] a) {
 		return items.toArray(a);
 	}
@@ -102,7 +96,6 @@ public class Chain<F, S> implements List<Chain<F, S>.Pair> {
 	 * @return <code>true</code>, since this method doesn't explicitly deny
 	 *         execution under any conditions.
 	 */
-	@Override
 	public boolean add(Pair pair) {
 		if (items.contains(pair))
 			pair = new Pair(pair.first, pair.second);
@@ -110,12 +103,10 @@ public class Chain<F, S> implements List<Chain<F, S>.Pair> {
 		return true;
 	}
 
-	@Override
 	public boolean remove(Object o) {
 		return items.remove(o);
 	}
 
-	@Override
 	public boolean containsAll(Collection<?> c) {
 		return items.containsAll(c);
 	}
@@ -123,64 +114,81 @@ public class Chain<F, S> implements List<Chain<F, S>.Pair> {
 	/**
 	 * Removes all but the last element in this {@link Chain}.
 	 */
-	@Override
 	public void clear() {
 		Pair last = items.getLast();
 		items.clear();
 		items.add(last);
 	}
 
-	@Override
 	public Chain<F, S>.Pair get(int index) {
 		return items.get(index);
 	}
 
-	@Override
 	public Chain<F, S>.Pair set(int index, Chain<F, S>.Pair element) {
-		// TODO Auto-generated method stub
-		return null;
+		return items.set(index, element);
 	}
 
-	@Override
+	public F setFirst(int pairIndex, F element) {
+		Pair pair = get(pairIndex);// The pair itself is not moved, its "first" variable is modified.
+		F old = pair.getFirst();
+		pair.setFirst(element);
+		return old;
+	}
+
+	public S setSecond(int pairIndex, S element) {
+		Pair pair = get(pairIndex);// Only the "second" var is modified. See setFirst(...).
+		S old = pair.getSecond();
+		pair.setSecond(element);
+		return old;
+	}
+
+	public static void main(String[] args) {
+		List<String> list = new LinkedList<>();
+		list.add("Potato");
+		System.out.println(list);
+	}
+
 	public void add(int index, Chain<F, S>.Pair element) {
-		// TODO Auto-generated method stub
-
+		if (index == size())
+			add(element);
+		else
+			items.add(index, element);
 	}
 
-	@Override
 	public Chain<F, S>.Pair remove(int index) {
-		// TODO Auto-generated method stub
-		return null;
+		return index != size() ? items.remove(index) : null;
 	}
 
-	@Override
 	public int indexOf(Object o) {
-		// TODO Auto-generated method stub
-		return 0;
+		if (o instanceof Chain.Pair)
+			return items.indexOf(o);
+		else
+			for (int i = 0; i < size(); i++) {
+				Pair pair = items.get(i);
+				if (o == pair.first || o == pair.second)
+					return i;
+			}
+		return -1;
 	}
 
-	@Override
 	public int lastIndexOf(Object o) {
-		// TODO Auto-generated method stub
-		return 0;
+		if (o instanceof Chain.Pair)
+			return items.lastIndexOf(o);
+		else
+			for (int i = size() - 1; i >= 0; i--) {
+				Pair pair = items.get(i);
+				if (o == pair.first || o == pair.second)
+					return i;
+			}
+		return -1;
 	}
 
-	@Override
-	public ListIterator<Chain<F, S>.Pair> listIterator() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ListIterator<Chain<F, S>.Pair> listIterator(int index) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<Chain<F, S>.Pair> subList(int fromIndex, int toIndex) {
-		// TODO Auto-generated method stub
-		return null;
+	public boolean addAll(Collection<? extends Chain<F, S>.Pair> c) {
+		boolean result = false;
+		for (Pair p : c)
+			if (add(p))
+				result = true;
+		return result;
 	}
 
 }
