@@ -7,6 +7,12 @@ import java.util.List;
 
 public class Chain<F, S> {
 
+	public Chain(F firstItem) {
+		Pair first = new Pair(firstItem, null);
+		first.last = true;
+		items.add(first);
+	}
+
 	private final LinkedList<Pair> items = new LinkedList<>();
 
 	public final class Pair {

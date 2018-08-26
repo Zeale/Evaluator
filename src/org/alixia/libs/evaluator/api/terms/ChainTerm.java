@@ -5,31 +5,71 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.alixia.libs.evaluator.api.Chain;
-import org.alixia.libs.evaluator.api.Chain.Combiner;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
+import org.alixia.libs.evaluator.api.operators.Operator;
 import org.alixia.libs.evaluator.api.operators.Precedented;
 import org.alixia.libs.evaluator.api.operators.Precedented.Precedence;
 import org.alixia.libs.evaluator.api.types.Data;
 
 public class ChainTerm<T extends Data<?>> implements Term<T> {
 
-	private final class MathChain extends Chain<Term<T>, NormalOperator> {
+	public interface TriCombiner<I1, I2, I3, R> {
+		R combine(I1 input1, I2 input2, I3 input3);
+	}
+
+	public final class MathChain extends Chain<Term<T>, NormalOperator> {
 
 		private final Set<Precedence> precedences = new TreeSet<>(Collections.reverseOrder());
 
-		public MathChain(final Term<T> first) {
+		private MathChain(final Term<T> first) {
 			super(first);
 		}
 
 		@Override
-		public void append(final NormalOperator second, final Term<T> first) {
-			super.append(second, first);
-			if (second instanceof Precedented)
-				precedences.add(((Precedented) second).precedence());
+		public boolean add(final NormalOperator second, final Term<T> first) {
+			boolean result = super.add(second, first);
+			if (result)
+				if (second instanceof Precedented)
+					precedences.add(((Precedented) second).precedence());
+			return result;
 		}
 
-		public Set<Precedence> getPrecedences() {
+		private Set<Precedence> getPrecedences() {
 			return Collections.unmodifiableSet(precedences);
+		}
+
+		@Override
+		public MathIterator iterator() {
+			return new MathIterator();
+		}
+
+		public class MathIterator extends ChainIterator {
+			/**
+			 * Takes two <b>{@link Pair}</b>, the current one, and the previous one. The
+			 * {@link Term}s from the first and second Pairs are used, and the
+			 * {@link Operator} from the first Pair is used. The combiner (typically) uses
+			 * the operator to combine the two terms, then returns a term. After this, the
+			 * previous {@link Pair} is removed from the {@link Chain}, and the other
+			 * {@link Pair} gets its {@link Term} value replaced with the result of the
+			 * combiner.
+			 * <p>
+			 * The position of this iterator is decremented in this operation, so that <b>no
+			 * change is noticed by subsequent calls to {@link #current()}</b>, and other
+			 * methods in this iterator that don't move the position backwards.
+			 * </p>
+			 * <p>
+			 * This method is also safe to use regardless of the position of the iterator,
+			 * since combinations can occur validly between the last and second to last
+			 * {@link Pair}s in the {@link Chain}, and an {@link IndexOutOfBoundsException}
+			 * will be thrown if the position is greater than such which would undergo the
+			 * previously aforementioned operation.
+			 * 
+			 * @param combiner The {@link TriCombiner} which combines the {@link Term}s
+			 *                 given an operator.
+			 */
+			public void combineCurrentWithLast(
+					TriCombiner<? super Term<T>, ? super NormalOperator, ? super Term<T>, ? extends NormalOperator> combiner) {
+			}
 		}
 
 	}
@@ -45,37 +85,39 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 	public void append(final NormalOperator operator, final Term<T> term) {
 		if (operator == null || term == null)
 			throw null;
-		chain.append(operator, term);
+		chain.add(operator, term);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public T evaluate() {
-		// TODO Get more efficient algorithm
-		final Combiner<Term<T>, Term<T>, NormalOperator, Term<T>> combiner = (f, s, t) -> (Term<T>) s.evaluate(f, t);
-
 		for (final Precedence i : chain.getPrecedences())
-			for (final Chain<Term<T>, NormalOperator>.ChainIterator iterator = chain.iterator(); iterator.hasNext();) {
+			for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
 				final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
-				if (pair.getSecond() == null)// Signifies that getFirst has returned the last Term<T> in the Chain.
+				if (pair.isLast())// Signifies that we are at the last Pair in the Chain.
 					break;
 
-				if (pair.getSecond().item instanceof Precedented
-						&& ((Precedented) pair.getSecond().item).precedence().equals(i))
-					iterator.combine(combiner);
-				// System.out.println("COMBINED; NEW CHAIN: " + chain);
+				if (pair.getSecond() instanceof Precedented && ((Precedented) pair.getSecond()).precedence().equals(i))
+					((Operator) pair.getSecond()).evaluate(chain, iterator.position(),
+							(ChainTerm<?>.MathChain.MathIterator) iterator);
 			}
-		// System.out.println("\n");
 
-		// System.out.println(chain);
-		Term<T> value = chain.getFront();
-		// Take care of non-precedented operators.
-		while (chain.linked()) {
-			value = (Term<T>) chain.getS(0).evaluate(value, chain.getF(1));
-			chain.replaceF(1, value);
-			chain.remove(0);
+		// TODO Take care of non-precedented operators.
+		for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
+			final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
+			if (pair.isLast())
+				break;
+			((Operator) pair.getSecond()).evaluate(chain, iterator.position(),
+					(ChainTerm<?>.MathChain.MathIterator) iterator);
 		}
-		return value.evaluate();
+
+		if (!(chain.size() == 1))
+			try {
+				throw new RuntimeException("A ChainTerm was evaluated, but ended up having a size greater than one.");
+			} catch (RuntimeException e) {
+				e.printStackTrace();
+			}
+
+		return chain.get(0).getFirst().evaluate();
 	}
 
 	@Override
