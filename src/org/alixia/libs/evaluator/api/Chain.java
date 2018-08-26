@@ -97,6 +97,10 @@ public class Chain<F, S> {
 			return item;
 		}
 
+		public void removePrevious() {
+			Chain.this.remove(position - 1);
+		}
+
 		@Override
 		public void remove() {
 			removeAndGet();

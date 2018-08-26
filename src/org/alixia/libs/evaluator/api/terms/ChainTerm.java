@@ -45,30 +45,42 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 
 		public class MathIterator extends ChainIterator {
 			/**
+			 * <p>
+			 * This operation works if the previous {@link Pair}'s second item is a
+			 * {@link NormalOperator}. Otherwise, it does nothing (apart from throw an
+			 * exception if the position of this iterator is <code>0</code>, and this
+			 * iterator can't get a hold of an operator, since there is no {@link Pair}
+			 * containing one behind the current {@link Pair}).
+			 * </p>
+			 * <p>
 			 * Takes two <b>{@link Pair}</b>, the current one, and the previous one. The
 			 * {@link Term}s from the first and second Pairs are used, and the
 			 * {@link Operator} from the first Pair is used. The combiner (typically) uses
 			 * the operator to combine the two terms, then returns a term. After this, the
 			 * previous {@link Pair} is removed from the {@link Chain}, and the other
 			 * {@link Pair} gets its {@link Term} value replaced with the result of the
-			 * combiner.
+			 * combination.
+			 * </p>
 			 * <p>
-			 * The position of this iterator is decremented in this operation, so that <b>no
+			 * The position of this iterator is incremented in this operation, so that <b>no
 			 * change is noticed by subsequent calls to {@link #current()}</b>, and other
 			 * methods in this iterator that don't move the position backwards.
 			 * </p>
 			 * <p>
-			 * This method is also safe to use regardless of the position of the iterator,
+			 * This method is also safe to use at any position, apart from <code>0</code>,
 			 * since combinations can occur validly between the last and second to last
 			 * {@link Pair}s in the {@link Chain}, and an {@link IndexOutOfBoundsException}
-			 * will be thrown if the position is greater than such which would undergo the
-			 * previously aforementioned operation.
-			 * 
-			 * @param combiner The {@link TriCombiner} which combines the {@link Term}s
-			 *                 given an operator.
+			 * will be thrown if the position is out of bounds.
+			 * </p>
 			 */
-			public void combineCurrentWithLast(
-					TriCombiner<? super Term<T>, ? super NormalOperator, ? super Term<T>, ? extends NormalOperator> combiner) {
+			@SuppressWarnings("unchecked")
+			public void combineCurrentWithLast() {
+				Pair previous = previous(), current = current();
+				if (previous.getSecond() instanceof NormalOperator) {
+					current.setFirst((Term<T>) previous.getSecond().evaluate(previous.getFirst(), current.getFirst()));
+					removePrevious();
+					skip();
+				}
 			}
 		}
 
