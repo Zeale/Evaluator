@@ -62,10 +62,158 @@ public class Chain<F, S> {
 		return false;
 	}
 
-	@Override
-	public Iterator<Chain<F, S>.Pair> iterator() {
-		// TODO Auto-generated method stub
-		return null;
+	public class ChainIterator implements Iterator<Pair> {
+
+		private int position = -1;
+
+		/**
+		 * @return The size of the {@link Chain}.
+		 */
+		public int size() {
+			return Chain.this.size();
+		}
+
+		/**
+		 * Removes the item at the current position (so what {@link #current()} will
+		 * return, and what {@link #next()} just returned). <b>Calling
+		 * {@link #current()} after this will return something different from previous
+		 * calls!</b>
+		 * 
+		 * @return The removed {@link Pair} object, if any. (This method returns
+		 *         <code>null</code> if the {@link Chain}'s {@link Chain#remove(int)}
+		 *         method returns <code>null</code>, which it does if the current item
+		 *         is the last item. The last item in a {@link Chain} can't be removed.
+		 *         I can be modified though.)
+		 */
+		public Pair removeAndGet() {
+			Pair item = get(position);
+			Chain.this.remove(position);
+			return item;
+		}
+
+		@Override
+		public void remove() {
+			removeAndGet();
+		}
+
+		/**
+		 * Returns how many times <code>next()</code> can be called.
+		 * 
+		 * @return <code>size() - position - 1</code>.
+		 */
+		public int remaining() {
+			return size() - position - 1;
+		}
+
+		/**
+		 * @return This iterator's current position.
+		 */
+		public int position() {
+			return position;
+		}
+
+		/**
+		 * Moves this iterator's position so that <code>peek()</code> will return the
+		 * item <b>after</b> the specified <code>position</code>.
+		 * 
+		 * @param position Where to move to.
+		 */
+		public void moveTo(int position) {
+			this.position = position;
+		}
+
+		/**
+		 * The item at the previous position.
+		 * 
+		 * @return <code>get(position - 1)</code>
+		 */
+		public Pair previous() {
+			return get(position - 1);
+		}
+
+		/**
+		 * Returns the {@link Pair} at the current position. (In other words, returns
+		 * what {@link #next()} just returned).
+		 * 
+		 * @return The {@link Pair} at the current position.
+		 */
+		public Pair current() {
+			return get(position);
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.util.Iterator#hasNext()
+		 */
+		@Override
+		public boolean hasNext() {
+			return position + 1 < size();
+		}
+
+		/**
+		 * Skips over the current element. Executing
+		 * 
+		 * <pre>
+		 * <code>
+		 * skip()
+		 * current()
+		 * </code>
+		 * </pre>
+		 * 
+		 * is equivalent to calling <code>next()</code>.
+		 */
+		public void skip() {
+			position++;
+		}
+
+		/**
+		 * Returns the next item with<b>out</b> moving forward.
+		 * 
+		 * @return <code>get(position+1)</code>
+		 */
+		public Pair peek() {
+			return get(position + 1);
+		}
+
+		/**
+		 * <p>
+		 * Moves forward, then returns the item at the new position.
+		 * </p>
+		 * <p>
+		 * <p>
+		 * As long as the position of this iterator is not changed (via any other method
+		 * or this method), and the underlying {@link Chain} is not modified, calling
+		 * {@link #current()} will always return the same value as the previous call to
+		 * {@link #next()}.
+		 * </p>
+		 * If the iterator is at 2:
+		 * 
+		 * <pre>
+		 * <code>0 1 2 3 4</code>
+		 * <code>    ^</code>
+		 * </pre>
+		 * 
+		 * then next will move to <code>3</code> and return <code>3</code>.
+		 * </p>
+		 * 
+		 * @return <code>get(++position)</code>
+		 */
+		@Override
+		public Pair next() {
+			return get(++position);
+		}
+
+	}
+
+	/**
+	 * No check or error is done or thrown by modifications occurring outside this
+	 * iterator, while this iterator is in use.
+	 * 
+	 * @return A new {@link ChainIterator} over this {@link Chain}.
+	 */
+	public ChainIterator iterator() {
+		return new ChainIterator();
 	}
 
 	public Object[] toArray() {
