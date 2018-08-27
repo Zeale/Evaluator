@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 
-public class MultiOperator implements Operator {
+public class MultiOperator implements Operator, Precedented {
 	private NormalOperator combiningOperator;
 	private final List<Operator> otherOperators = new LinkedList<>();
 
@@ -27,6 +27,17 @@ public class MultiOperator implements Operator {
 		for (Operator o : otherOperators)
 			o.evaluate(chain, iterator);
 		combiningOperator.evaluate(chain, iterator);
+	}
+
+	@Override
+	public Precedence precedence() {
+		return combiningOperator instanceof Precedented ? ((Precedented) combiningOperator).precedence()
+				: Precedence.NONE;
+	}
+
+	@Override
+	public String toString() {
+		return "MultiOp[" + combiningOperator + "]";
 	}
 
 }

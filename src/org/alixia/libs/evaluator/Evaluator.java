@@ -13,16 +13,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
-import org.alixia.libs.evaluator.api.Equation;
 import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.VariableMap;
 import org.alixia.libs.evaluator.api.VariableMap.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
+import org.alixia.libs.evaluator.api.operators.MultiOperator;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.operators.Operator;
-import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
-import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
@@ -65,16 +63,8 @@ public class Evaluator {
 			return term;
 		}
 
-		public void setTerm(Term<?> term) {
-			this.term = term;
-		}
-
 		public Operator getOperator() {
 			return operator;
-		}
-
-		public void setOperator(Operator operator) {
-			this.operator = operator;
 		}
 
 	}
@@ -142,7 +132,7 @@ public class Evaluator {
 		while (!frag.isLast()) {
 			Operator previousOp = frag.getOperator();
 			frag = parseTermContents();
-			parse.append((NormalOperator) previousOp, (Term) frag.getTerm());
+			parse.append((Operator) previousOp, (Term) frag.getTerm());
 		}
 		return parse;
 	}
@@ -276,6 +266,7 @@ public class Evaluator {
 	@SuppressWarnings("unchecked")
 	private EquationFragment parseTermContents() {
 
+		List<Operator> otherOperators = new LinkedList<>();
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
 		clearWhitespace("The equation ended prematurely; another term was expected.");
@@ -457,84 +448,20 @@ public class Evaluator {
 		for (Class<? extends Data<?>> c0 : castList)
 			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
 
-		clearWhitespace(null);
-		EquationFragment fragment;
-		fragment = equation.hasNext() ? new EquationFragment(term, parseOperator()) : new EquationFragment(term);
+		// TODO Parse Factorial.
 
-		return fragment;
+		clearWhitespace(null);
+
+		if (equation.hasNext()) {
+			MultiOperator op = new MultiOperator();
+			op.setCombiningOperator(parseOperator());
+			for (Operator o : otherOperators)
+				op.addOperators(o);
+			return new EquationFragment(term, op);
+		} else
+			return new EquationFragment(term);
 
 	}
-
-//	@SuppressWarnings("unchecked")
-//	private Term<?> parseTerm() {
-//		Term<?> value = parseTermContents();
-//		int c = box(equation.peek());
-//		if (!clearWhitespace(null)) {// The next char is not whitespace.
-//			c = box(equation.peek());
-//			if (c == '!') {
-//				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
-//						&& ((org.alixia.libs.evaluator.api.terms.Number) value).evaluate().evaluate()
-//								.remainder(BigDecimal.ONE).doubleValue() != 0)
-//					throw new RuntimeException(
-//							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
-//				try {
-//					value = new FactorialTermWrapper((Term<NumericData>) value);
-//				} catch (ClassCastException e) {
-//					throw new RuntimeException(
-//							"Factorial was applied to some data which was not applicable for factorial.");
-//				}
-//				// Right now, peek returns '!'. That's why we're in this if block.
-//				equation.skip();// Skip over the exclamation point so that the next read operation
-//								// (either next or peek) won't see it.
-//			}
-//		}
-//
-//		return value;
-//
-//	}
-
-//	@SuppressWarnings({ "unchecked", "rawtypes" })
-//	private Equation<?> parseEquation() {
-//		Equation<?> equ = new Equation<>();
-//
-//		while (equation.hasNext()) {
-//			Term<?> term = parseTerm();
-//			clearWhitespace(null);
-//			if (term instanceof Variable && box(equation.peek()) == '=') {
-//				equ.addAssignment(readAssignment((Variable<?>) term));
-//			} else {
-//				if (equ.getExpression() != null)
-//					throw new RuntimeException(
-//							"Two expressions were included in the equation. Which should be returned is unknown.");
-//				ChainTerm parse = new ChainTerm<>(term);
-//				clearWhitespace(null);
-//				while (equation.hasNext() && box(equation.peek()) != ';') {
-//					parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
-//					clearWhitespace(null);// For the while loop.
-//				}
-//				equ.setExpression(parse);
-//			}
-//		}
-//
-//		return equ;
-//	}
-
-//	@SuppressWarnings({ "unchecked", "rawtypes" })
-//	private Statement readAssignment(Variable term) {
-//		equation.skip();
-//		String equ = "";
-//		if (!equation.hasNext() || equation.peek() == ';')
-//			throw new RuntimeException("Variable assignment contains no value.");
-//		int c;
-//		while ((c = box(equation.peek())) != ';' && c != -1) {
-//			equation.skip();
-//			equ += (char) c;
-//		}
-//
-//		final String finalizedEquation = equ;
-//		return () -> ((Variable) term).setValue(new Evaluator().solve(Spate.spate(finalizedEquation)));
-//
-//	}
 
 	public synchronized Data<?> solve(final Spate<Character> equation) {
 		this.equation = equation;

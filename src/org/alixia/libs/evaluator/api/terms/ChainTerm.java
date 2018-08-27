@@ -13,7 +13,7 @@ import org.alixia.libs.evaluator.api.types.Data;
 
 public class ChainTerm<T extends Data<?>> implements Term<T> {
 
-	public final class MathChain extends Chain<Term<T>, NormalOperator> {
+	public final class MathChain extends Chain<Term<T>, Operator> {
 
 		private final Set<Precedence> precedences = new TreeSet<>(Collections.reverseOrder());
 
@@ -22,10 +22,10 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 		}
 
 		@Override
-		public boolean add(final NormalOperator second, final Term<T> first) {
+		public boolean add(final Operator second, final Term<T> first) {
 			boolean result = super.add(second, first);
 			if (result)
-				if (second instanceof Precedented)
+				if (second instanceof Precedented && !((Precedented) second).precedence().equals(Precedence.NONE))
 					precedences.add(((Precedented) second).precedence());
 			return result;
 		}
@@ -73,10 +73,19 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 			public void combineCurrentWithLast() {
 				Pair previous = previous(), current = current();
 				if (previous.getSecond() instanceof NormalOperator) {
-					current.setFirst((Term<T>) previous.getSecond().evaluate(previous.getFirst(), current.getFirst()));
+					current.setFirst((Term<T>) ((NormalOperator) previous.getSecond()).evaluate(previous.getFirst(),
+							current.getFirst()));
 					removePrevious();
 					skipBack();
 				}
+			}
+
+			@SuppressWarnings("unchecked")
+			public void combineCurrentAndPreviousWithNormalOp(NormalOperator operator) {
+				Pair previous = previous(), current = current();
+				current.setFirst((Term<T>) operator.evaluate(previous.getFirst(), current.getFirst()));
+				removePrevious();
+				skipBack();
 			}
 
 		}
@@ -91,7 +100,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 		chain = new MathChain(first);
 	}
 
-	public void append(final NormalOperator operator, final Term<T> term) {
+	public void append(final Operator operator, final Term<T> term) {
 		if (operator == null || term == null)
 			throw null;
 		chain.add(operator, term);
@@ -100,9 +109,10 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 	@Override
 	public T evaluate() {
 
+		System.out.println(chain);
 		for (final Precedence i : chain.getPrecedences())
 			for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
-				final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
+				final Chain<Term<T>, Operator>.Pair pair = iterator.next();
 				if (pair.isLast())// Signifies that we are at the last Pair in the Chain.
 					break;
 				if (pair.getSecond() instanceof Precedented
@@ -110,10 +120,10 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 					((Operator) pair.getSecond()).evaluate(chain, (ChainTerm<?>.MathChain.MathIterator) iterator);
 				}
 			}
-
+		System.out.println(chain);
 		// TODO Take care of non-precedented operators.
 		for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
-			final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
+			final Chain<Term<T>, Operator>.Pair pair = iterator.next();
 			if (pair.isLast())
 				break;
 			((Operator) pair.getSecond()).evaluate(chain, (ChainTerm<?>.MathChain.MathIterator) iterator);
