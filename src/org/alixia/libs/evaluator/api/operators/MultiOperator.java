@@ -15,6 +15,11 @@ public class MultiOperator implements Operator {
 			this.otherOperators.add(o);
 	}
 
+	public void addOperator(Operator operator) {
+		if (!otherOperators.contains(operator))
+			otherOperators.add(operator);
+	}
+
 	@Override
 	public void evaluate(ChainTerm<?>.MathChain chain, ChainTerm<?>.MathChain.MathIterator iterator) {
 		for (Operator o : otherOperators)
