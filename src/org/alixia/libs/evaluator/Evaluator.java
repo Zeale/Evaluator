@@ -20,6 +20,7 @@ import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.MultiOperator;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.operators.Operator;
+import org.alixia.libs.evaluator.api.operators.SimpleOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
@@ -448,9 +449,20 @@ public class Evaluator {
 		for (Class<? extends Data<?>> c0 : castList)
 			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
 
-		// TODO Parse Factorial.
+		// A factorial must IMMEDIATELY follow its term. If an exclamation mark is found
+		// otherwise, it's a syntactic error.
+		boolean foundFactorial;
+		if (foundFactorial = box(equation.peek()) == '!') {
+			equation.skip();
+			otherOperators.add(SimpleOperator.FACTORIAL);
+		}
 
 		clearWhitespace(null);
+
+		// TODO This will be removed alongside the addition of the "!" character's use
+		// of negating boolean expressions.
+		if (box(equation.peek()) == '!' && !foundFactorial)
+			throw new RuntimeException("A factorial was separated from its term by whitespace. This is not allowed.");
 
 		if (equation.hasNext()) {
 			MultiOperator op = new MultiOperator();
@@ -459,7 +471,7 @@ public class Evaluator {
 				op.addOperators(o);
 			return new EquationFragment(term, op);
 		} else
-			return new EquationFragment(term);
+			return new EquationFragment(term);// TODO Don't ditch otherOperators here. :(
 
 	}
 
