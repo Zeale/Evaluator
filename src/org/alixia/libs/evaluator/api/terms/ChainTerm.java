@@ -109,7 +109,6 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 	@Override
 	public T evaluate() {
 
-		System.out.println(chain);
 		for (final Precedence i : chain.getPrecedences())
 			for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
 				final Chain<Term<T>, Operator>.Pair pair = iterator.next();
@@ -120,7 +119,6 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 					((Operator) pair.getSecond()).evaluate(chain, (ChainTerm<?>.MathChain.MathIterator) iterator);
 				}
 			}
-		System.out.println(chain);
 		// TODO Take care of non-precedented operators.
 		for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
 			final Chain<Term<T>, Operator>.Pair pair = iterator.next();
