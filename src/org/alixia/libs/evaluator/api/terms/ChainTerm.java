@@ -59,15 +59,14 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 			 * combination.
 			 * </p>
 			 * <p>
-			 * The position of this iterator is incremented in this operation, so that <b>no
+			 * The position of this iterator is decremented in this operation, so that <b>no
 			 * change is noticed by subsequent calls to {@link #current()}</b>, and other
 			 * methods in this iterator that don't move the position backwards.
 			 * </p>
 			 * <p>
-			 * This method is also safe to use at any position, apart from <code>0</code>,
-			 * since combinations can occur validly between the last and second to last
-			 * {@link Pair}s in the {@link Chain}, and an {@link IndexOutOfBoundsException}
-			 * will be thrown if the position is out of bounds.
+			 * This method is also safe to use at any position, apart from <code>0</code>.
+			 * An {@link IndexOutOfBoundsException} will be thrown if the position is out of
+			 * bounds.
 			 * </p>
 			 */
 			@SuppressWarnings("unchecked")
@@ -76,7 +75,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 				if (previous.getSecond() instanceof NormalOperator) {
 					current.setFirst((Term<T>) previous.getSecond().evaluate(previous.getFirst(), current.getFirst()));
 					removePrevious();
-					skip();
+					skipBack();
 				}
 			}
 
@@ -120,7 +119,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 			((Operator) pair.getSecond()).evaluate(chain, (ChainTerm<?>.MathChain.MathIterator) iterator);
 		}
 
-		if (!(chain.size() == 1))
+		if (chain.size() != 1)
 			try {
 				throw new RuntimeException("A ChainTerm was evaluated, but ended up having a size greater than one.");
 			} catch (RuntimeException e) {
