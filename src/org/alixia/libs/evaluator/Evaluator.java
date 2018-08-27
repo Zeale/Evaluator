@@ -19,6 +19,7 @@ import org.alixia.libs.evaluator.api.VariableMap;
 import org.alixia.libs.evaluator.api.VariableMap.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
+import org.alixia.libs.evaluator.api.operators.Operator;
 import org.alixia.libs.evaluator.api.statements.Statement;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.FactorialTermWrapper;
@@ -38,6 +39,33 @@ public class Evaluator {
 	{
 		typeMap.new Type(NumericData.class, "number");
 		typeMap.new Type(TimeData.class, "time");
+	}
+
+	private static final class EquationFragment {
+		private Term<?> term;
+		private Operator operator;
+
+		public EquationFragment(Term<?> term, Operator operator) {
+			this.term = term;
+			this.operator = operator;
+		}
+
+		public Term<?> getTerm() {
+			return term;
+		}
+
+		public void setTerm(Term<?> term) {
+			this.term = term;
+		}
+
+		public Operator getOperator() {
+			return operator;
+		}
+
+		public void setOperator(Operator operator) {
+			this.operator = operator;
+		}
+
 	}
 
 	public VariableMap getVariableMap() {
