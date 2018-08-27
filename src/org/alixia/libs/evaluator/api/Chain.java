@@ -68,6 +68,16 @@ public class Chain<F, S> {
 		return false;
 	}
 
+	@Override
+	public String toString() {
+		String value = "Chain[";
+		for (int i = 0; i < items.size() - 1; i++) {
+			Pair pair = items.get(i);
+			value += "Pair[" + pair.getFirst() + ", " + pair.getSecond() + "], ";
+		}
+		return value + "Pair[" + items.getLast().getFirst() + "]]";
+	}
+
 	public class ChainIterator implements Iterator<Pair> {
 
 		private int position = -1;
