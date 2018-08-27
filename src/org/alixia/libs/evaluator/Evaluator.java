@@ -55,9 +55,9 @@ public class Evaluator {
 			return last;
 		}
 
-		public EquationFragment(Term<?> term) {
-			this.term = term;
-			last = true;
+		public EquationFragment(Term<?> term, MultiOperator op, boolean b) {
+			this(term, op);
+			last = b;
 		}
 
 		public Term<?> getTerm() {
@@ -133,8 +133,10 @@ public class Evaluator {
 		while (!frag.isLast()) {
 			Operator previousOp = frag.getOperator();
 			frag = parseTermContents();
-			parse.append((Operator) previousOp, (Term) frag.getTerm());
+			parse.append(previousOp, (Term) frag.getTerm());
 		}
+		if (frag.getOperator() != null)
+			parse.append(frag.getOperator(), MultiOperator.NULL_TERM);
 		return parse;
 	}
 
@@ -463,15 +465,12 @@ public class Evaluator {
 		// of negating boolean expressions.
 		if (box(equation.peek()) == '!' && !foundFactorial)
 			throw new RuntimeException("A factorial was separated from its term by whitespace. This is not allowed.");
+		MultiOperator op = new MultiOperator();
+		op.setCombiningOperator(equation.hasNext() ? parseOperator() : MultiOperator.NULL_DELETE_OPERATOR);
+		for (Operator o : otherOperators)
+			op.addOperators(o);
 
-		if (equation.hasNext()) {
-			MultiOperator op = new MultiOperator();
-			op.setCombiningOperator(parseOperator());
-			for (Operator o : otherOperators)
-				op.addOperators(o);
-			return new EquationFragment(term, op);
-		} else
-			return new EquationFragment(term);// TODO Don't ditch otherOperators here. :(
+		return new EquationFragment(term, op, !equation.hasNext());
 
 	}
 

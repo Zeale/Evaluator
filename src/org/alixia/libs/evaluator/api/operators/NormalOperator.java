@@ -9,7 +9,8 @@ public interface NormalOperator extends Operator {
 	@Override
 	default void evaluate(ChainTerm<?>.MathChain chain, ChainTerm<?>.MathChain.MathIterator iterator) {
 		iterator.skip();
-		iterator.combineCurrentAndPreviousWithNormalOp(this);
+		iterator.combineCurrentAndPreviousWithNormalOp(this);// This method (in iterator) ends up calling
+																// evaluate(Term<?>,Term<?>);
 		iterator.skipBack();
 	}
 }
