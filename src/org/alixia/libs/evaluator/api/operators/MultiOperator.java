@@ -6,18 +6,20 @@ import java.util.List;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 
 public class MultiOperator implements Operator {
-	private final NormalOperator combiningOperator;
+	private NormalOperator combiningOperator;
 	private final List<Operator> otherOperators = new LinkedList<>();
 
-	public MultiOperator(NormalOperator combiningOperator, Operator... otherOperators) {
-		this.combiningOperator = combiningOperator;
-		for (Operator o : otherOperators)
-			this.otherOperators.add(o);
+	public MultiOperator() {
 	}
 
-	public void addOperator(Operator operator) {
-		if (!otherOperators.contains(operator))
-			otherOperators.add(operator);
+	public void setCombiningOperator(NormalOperator combiningOperator) {
+		this.combiningOperator = combiningOperator;
+	}
+
+	public void addOperators(Operator... operators) {
+		for (Operator o : operators)
+			if (!otherOperators.contains(o))
+				otherOperators.add(o);
 	}
 
 	@Override
