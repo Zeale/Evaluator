@@ -17,10 +17,7 @@ import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.VariableMap;
 import org.alixia.libs.evaluator.api.VariableMap.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
-import org.alixia.libs.evaluator.api.operators.MultiOperator;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
-import org.alixia.libs.evaluator.api.operators.Operator;
-import org.alixia.libs.evaluator.api.operators.SimpleOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
@@ -38,36 +35,6 @@ public class Evaluator {
 	{
 		typeMap.new Type(NumericData.class, "number");
 		typeMap.new Type(TimeData.class, "time");
-	}
-
-	private static final class EquationFragment {
-		private Term<?> term;
-		private Operator operator;
-
-		private boolean last;
-
-		public EquationFragment(Term<?> term, Operator operator) {
-			this.term = term;
-			this.operator = operator;
-		}
-
-		public boolean isLast() {
-			return last;
-		}
-
-		public EquationFragment(Term<?> term, MultiOperator op, boolean b) {
-			this(term, op);
-			last = b;
-		}
-
-		public Term<?> getTerm() {
-			return term;
-		}
-
-		public Operator getOperator() {
-			return operator;
-		}
-
 	}
 
 	public VariableMap getVariableMap() {
@@ -108,36 +75,6 @@ public class Evaluator {
 
 	private int box(final Character character) {
 		return character == null ? -1 : character;
-	}
-
-	/**
-	 * This method parses an equation from {@link #equation}. It expects
-	 * {@link #equation} to be set. It only parses the actual equation, not any
-	 * variable assignments. (If those exist, they should already be parsed when
-	 * this method is called.
-	 * 
-	 * @return Returns a {@link ChainTerm} of a parsed equation.
-	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized ChainTerm<?> chain() {
-
-		// Check to see if the equation is empty.
-		Character c;
-		while (Character.isWhitespace(box(c = equation.peek())))
-			equation.skip();
-		if (c == null)
-			throw new RuntimeException("Equation has no evaluatable content.");
-
-		EquationFragment frag = parseTermContents();
-		final ChainTerm<?> parse = new ChainTerm<>(frag.getTerm());
-		while (!frag.isLast()) {
-			Operator previousOp = frag.getOperator();
-			frag = parseTermContents();
-			parse.append(previousOp, (Term) frag.getTerm());
-		}
-		if (frag.getOperator() != null)
-			parse.append(frag.getOperator(), MultiOperator.NULL_TERM);
-		return parse;
 	}
 
 	/**
@@ -266,10 +203,41 @@ public class Evaluator {
 			throw new RuntimeException("Could not parse the operator, '" + (char) c + "'");
 	}
 
-	@SuppressWarnings("unchecked")
-	private EquationFragment parseTermContents() {
+	public synchronized Data<?> solve(final Spate<Character> equation) {
+		this.equation = equation;
+		return chain().evaluate();
+	}
 
-		List<Operator> otherOperators = new LinkedList<>();
+	/**
+	 * This method parses an equation from {@link #equation}. It expects
+	 * {@link #equation} to be set. It only parses the actual equation, not any
+	 * variable assignments. (If those exist, they should already be parsed when
+	 * this method is called.
+	 * 
+	 * @return Returns a {@link ChainTerm} of a parsed equation.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public synchronized ChainTerm<?> chain() {
+
+		// Check to see if the equation is empty.
+		Character c;
+		while (Character.isWhitespace(box(c = equation.peek())))
+			equation.skip();
+		if (c == null)
+			throw new RuntimeException("Equation has no evaluatable content.");
+
+		final ChainTerm<?> parse = new ChainTerm<>(parseTerm());
+		clearWhitespace(null);
+		while (equation.hasNext()) {
+			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
+			clearWhitespace(null);// For the while loop.
+		}
+		return parse;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Term<?> parseTerm() {
+
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
 		clearWhitespace("The equation ended prematurely; another term was expected.");
@@ -451,32 +419,12 @@ public class Evaluator {
 		for (Class<? extends Data<?>> c0 : castList)
 			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
 
-		// A factorial must IMMEDIATELY follow its term. If an exclamation mark is found
-		// otherwise, it's a syntactic error.
-		boolean foundFactorial;
-		if (foundFactorial = box(equation.peek()) == '!') {
+		if (box(equation.peek()) == '!') {
 			equation.skip();
-			otherOperators.add(SimpleOperator.FACTORIAL);
+			term = Term.factorial(term);
 		}
 
-		clearWhitespace(null);
-
-		// TODO This will be removed alongside the addition of the "!" character's use
-		// of negating boolean expressions.
-		if (box(equation.peek()) == '!' && !foundFactorial)
-			throw new RuntimeException("A factorial was separated from its term by whitespace. This is not allowed.");
-		MultiOperator op = new MultiOperator();
-		op.setCombiningOperator(equation.hasNext() ? parseOperator() : MultiOperator.NULL_DELETE_OPERATOR);
-		for (Operator o : otherOperators)
-			op.addOperators(o);
-
-		return new EquationFragment(term, op, !equation.hasNext());
-
-	}
-
-	public synchronized Data<?> solve(final Spate<Character> equation) {
-		this.equation = equation;
-		return chain().evaluate();
+		return term;
 	}
 
 	public static BigDecimal roundBigDecimal_old(String decimal) {

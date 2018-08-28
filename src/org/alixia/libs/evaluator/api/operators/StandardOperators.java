@@ -8,7 +8,6 @@ import java.util.function.BiFunction;
 
 import org.alixia.libs.evaluator.Evaluator;
 import org.alixia.libs.evaluator.api.operators.StandardOperators.OperatorFunction.Handle;
-import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
@@ -49,11 +48,6 @@ public enum StandardOperators implements NormalOperator, Precedented {
 	@Override
 	public Term<?> evaluate(final Term<? extends Data<?>> first, final Term<? extends Data<?>> second) {
 		return Term.wrap(function.apply(first.evaluate(), second.evaluate()));
-	}
-
-	@Override
-	public void evaluate(ChainTerm<?>.MathChain chain, ChainTerm<?>.MathChain.MathIterator iterator) {
-		NormalOperator.super.evaluate(chain, iterator);
 	}
 
 	@Override
