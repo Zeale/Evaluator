@@ -9,6 +9,7 @@ import java.util.function.BiFunction;
 import org.alixia.libs.evaluator.Evaluator;
 import org.alixia.libs.evaluator.api.operators.StandardOperators.OperatorFunction.Handle;
 import org.alixia.libs.evaluator.api.terms.Term;
+import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
 import org.alixia.libs.evaluator.api.types.TimeData;
@@ -26,7 +27,8 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			})), 1),
 	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
 	EXPONENTIATION((BigDecimalHandler) (a, b) -> a.pow(b.intValue()), 3),
-	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2);
+	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2),
+	AND((t, u) -> Data.cast(t, BooleanData.class).and(Data.cast(u, BooleanData.class)), 4);
 	public static BigInteger getFront(BigDecimal number) {
 		return number.toBigInteger();
 	}
