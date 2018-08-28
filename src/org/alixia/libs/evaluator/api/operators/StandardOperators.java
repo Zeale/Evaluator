@@ -8,7 +8,6 @@ import java.util.function.BiFunction;
 
 import org.alixia.libs.evaluator.Evaluator;
 import org.alixia.libs.evaluator.api.operators.StandardOperators.OperatorFunction.Handle;
-import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;

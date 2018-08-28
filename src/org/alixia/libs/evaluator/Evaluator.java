@@ -218,14 +218,14 @@ public class Evaluator {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public synchronized ChainTerm<?> chain() {
-	
+
 		// Check to see if the equation is empty.
 		Character c;
 		while (Character.isWhitespace(box(c = equation.peek())))
 			equation.skip();
 		if (c == null)
 			throw new RuntimeException("Equation has no evaluatable content.");
-	
+
 		final ChainTerm<?> parse = new ChainTerm<>(parseTerm());
 		clearWhitespace(null);
 		while (equation.hasNext()) {
@@ -236,16 +236,16 @@ public class Evaluator {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Term<?> parseTermContents() {
-	
+	private Term<?> parseTerm() {
+
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
 		clearWhitespace("The equation ended prematurely; another term was expected.");
-	
+
 		List<Class<? extends Data<?>>> castList = new LinkedList<>();
-	
+
 		Term<?> term;
-	
+
 		int c;
 		boolean negate = false;
 		TERM_LOOP: while (true) {
@@ -271,14 +271,14 @@ public class Evaluator {
 						break;
 					}
 				}
-	
+
 				Class<? extends Data<?>> typeCls = typeMap.get(type);
 				if (typeCls == null)
 					throw new RuntimeException("Couldn't discern a type from the given reference: " + type + ".");
 				castList.add(typeCls);
-	
+
 				continue TERM_LOOP;// This allows multiple casts to take place.
-	
+
 			} else if (c == '+')// Force Positive
 				negate = false;
 			else if (c == '-')// Flip Negativity
@@ -297,7 +297,7 @@ public class Evaluator {
 					name += (char) c;
 					equation.skip();
 				}
-	
+
 				Boolean isFunction;// true indicates that "function::" prefixing was used, false indicates that
 									// such was used, but for variables, and null indicates that no forcing was
 									// determined off of prefix detection.
@@ -315,27 +315,27 @@ public class Evaluator {
 					isFunction = null;
 				if (isFunction != null && (name = name.substring(name.indexOf("::") + 2)).isEmpty())
 					throw new RuntimeException("No " + (isFunction ? "function" : "variable") + " name specified.");
-	
+
 				// TODO Match name against name database to determine if it's a function or
 				// variable.
-	
+
 				// Functions have a higher precedence than vars; if there is a name conflict, a
 				// the name will be parsed as the function rather than a variable, unless the
 				// "function::functionName" specifying syntax is used, or a tilde is used to
 				// force variable treatment.
-	
+
 				@SuppressWarnings("rawtypes")
 				final SimpleFunction function = SimpleFunction.getFunction(name);
-	
+
 				if (isFunction == null)// The indication by isFunction changes here.
 					isFunction = function == null ? false : true;
-	
+
 				if (isFunction) {
 					StandardWrapper parenthesis;
 					if (c == -1 || (parenthesis = StandardWrapper.openValueOf((char) c)) == null)
 						throw new RuntimeException(
 								name + " was determined to be a function, but was not followed by parentheses.");
-	
+
 					final List<String> args = parseFunctionArgs(parenthesis);
 					if (function == null)
 						throw new RuntimeException("Invalid function name: " + name
@@ -357,7 +357,7 @@ public class Evaluator {
 					term = variable::getValue;
 					break TERM_LOOP;
 				}
-	
+
 			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
 				String content = "";
 				OUTER: while (true) {
@@ -392,7 +392,7 @@ public class Evaluator {
 								term = Term.wrap(new TimeData(content));
 								break TERM_LOOP;
 							}
-	
+
 							equation.skip();
 						}
 					} else {
@@ -408,47 +408,23 @@ public class Evaluator {
 				term = new org.alixia.libs.evaluator.api.terms.Number(
 						new NumericData(new BigDecimal(content).multiply(new BigDecimal((negate ? -1 : 1)))));
 				break TERM_LOOP;
-	
+
 			} else if (c == -1)
 				throw new RuntimeException("Expected a term but found the end of the equation.");
 			else if (!Character.isWhitespace(c))
 				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
 		} // Leaves off before first digit.
-	
+
 		for (Class<? extends Data<?>> c0 : castList)
 			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
-	
-		return term;
-	
-	}
 
-	@SuppressWarnings("unchecked")
-	private Term<?> parseTerm() {
-		Term<?> value = parseTermContents();
-		int c = box(equation.peek());
-		if (!clearWhitespace(null)) {// The next char is not whitespace.
-			c = box(equation.peek());
-			if (c == '!') {
-				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
-						&& ((org.alixia.libs.evaluator.api.terms.Number) value).evaluate().evaluate()
-								.remainder(BigDecimal.ONE).doubleValue() != 0)
-					throw new RuntimeException(
-							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
-				try {
-					value = new FactorialTermWrapper((Term<NumericData>) value);
-				} catch (ClassCastException e) {
-					throw new RuntimeException(
-							"Factorial was applied to some data which was not applicable for factorial.");
-				}
-				// Right now, peek returns '!'. That's why we're in this if block.
-				equation.skip();// Skip over the exclamation point so that the next read operation
-								// (either next or peek) won't see it.
-			}
+		if (box(equation.peek()) == '!') {
+			equation.skip();
+			term = Term.factorial(term);
 		}
-	
-		return value;
-	
+
+		return term;
 	}
 
 	public static BigDecimal roundBigDecimal_old(String decimal) {
