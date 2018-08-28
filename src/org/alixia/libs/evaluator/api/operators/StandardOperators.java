@@ -122,7 +122,7 @@ public enum StandardOperators implements NormalOperator, Precedented {
 				}
 
 			if (selectedHandle == numberHandler)
-				numberHandler.function.apply(t.toNumericData(), u.toNumericData());
+				return numberHandler.function.apply(t.toNumericData(), u.toNumericData());
 
 			return ((Handle<Data<?>>) selectedHandle).function.apply(selectedHandle.cls.cast(t), u);
 		}
