@@ -29,7 +29,7 @@ public enum StandardOperators implements NormalOperator, Precedented {
 	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
 	EXPONENTIATION((BigDecimalHandler) (a, b) -> a.pow(b.intValue()), 3),
 	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2), AND((BiBoolFunction) BooleanData::and, 5),
-	OR((BiBoolFunction) BooleanData::or, 4);
+	OR((BiBoolFunction) BooleanData::or, 4), XOR((BiBoolFunction) BooleanData::or, 6);
 
 	public static BigInteger getFront(BigDecimal number) {
 		return number.toBigInteger();
