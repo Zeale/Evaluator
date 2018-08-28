@@ -1,5 +1,7 @@
 package org.alixia.libs.evaluator.api.types;
 
+import java.util.function.BiFunction;
+
 public class BooleanData extends SimpleData<Boolean> {
 
 	public BooleanData(Boolean value) {
@@ -13,6 +15,15 @@ public class BooleanData extends SimpleData<Boolean> {
 	 */
 	public BooleanData() {
 		this(null);
+	}
+
+	public interface BiBoolFunction extends BiFunction<Data<?>, Data<?>, Data<?>> {
+		@Override
+		default Data<?> apply(Data<?> t, Data<?> u) {
+			return applyBool(Data.cast(t, BooleanData.class), Data.cast(u, BooleanData.class));
+		}
+
+		<FT extends BooleanData, ST extends BooleanData> Data<?> applyBool(FT t, ST u);
 	}
 
 	@Override
