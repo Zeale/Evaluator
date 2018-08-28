@@ -3,6 +3,7 @@ package org.alixia.libs.evaluator.api.terms;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
 
@@ -24,6 +25,10 @@ public interface Term<DT extends Data<?>> {
 			result = result.multiply(i);
 		return Term.wrap(new NumericData(new BigDecimal(result)));
 
+	}
+
+	static Term<BooleanData> not(Term<? extends Data<? extends Boolean>> data) {
+		return Term.wrap(new BooleanData(!data.evaluate().evaluate()));
 	}
 
 	static <CT, CDT extends Data<CT>, ODT extends Data<?>> Term<CDT> castTerm(Term<ODT> originalTerm,
