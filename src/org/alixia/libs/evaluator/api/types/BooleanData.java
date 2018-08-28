@@ -22,6 +22,22 @@ public class BooleanData extends SimpleData<Boolean> {
 		return data;
 	}
 
+	public BooleanData and(BooleanData bool) {
+		return new BooleanData(evaluate() && bool.evaluate());
+	}
+
+	public BooleanData not() {
+		return new BooleanData(!evaluate());
+	}
+
+	public BooleanData or(BooleanData bool) {
+		return new BooleanData(evaluate() || bool.evaluate());
+	}
+
+	public BooleanData xor(BooleanData bool) {
+		return new BooleanData(evaluate() ^ bool.evaluate());
+	}
+
 	@Override
 	public NumericData toNumericData() {
 		return new NumericData(value ? 1 : 0);
