@@ -87,6 +87,13 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 				skipBack();
 			}
 
+			@SuppressWarnings("unchecked")
+			public void combineCurrentAndNextWithNormalOp(NormalOperator operator) {
+				Pair current = current(), next = peek();
+				next.setFirst((Term<T>) operator.evaluate(current.getFirst(), next.getFirst()));
+				remove();
+			}
+
 		}
 
 	}
@@ -114,14 +121,14 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 				if (pair.isLast())// Signifies that we are at the last Pair in the Chain.
 					break;
 				if (pair.getSecond() instanceof Precedented && ((Precedented) pair.getSecond()).precedence().equals(i))
-					iterator.combineCurrentAndPreviousWithNormalOp(pair.getSecond());
+					iterator.combineCurrentAndNextWithNormalOp(pair.getSecond());
 			}
 		// TODO Take care of non-precedented operators.
 		for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
 			final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
 			if (pair.isLast())
 				break;
-			iterator.combineCurrentAndPreviousWithNormalOp(pair.getSecond());
+			iterator.combineCurrentAndNextWithNormalOp(pair.getSecond());
 		}
 
 		if (chain.size() != 1)
