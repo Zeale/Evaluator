@@ -60,4 +60,10 @@ public interface Data<T> {
 		return (CDT) castType.newInstance().cast(data);
 	}
 
+	@SuppressWarnings("unchecked")
+	static <CDT extends Data<?>, ODT extends Data<?>> CDT castUnknown(ODT data, Class<CDT> castType)
+			throws InstantiationException, IllegalAccessException {
+		return (CDT) castType.newInstance().cast(data);
+	}
+
 }

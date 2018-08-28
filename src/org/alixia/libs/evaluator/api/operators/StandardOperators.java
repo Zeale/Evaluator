@@ -98,7 +98,7 @@ public enum StandardOperators implements NormalOperator, Precedented {
 		@SuppressWarnings("unchecked")
 		@Override
 		public Data<?> apply(Data<?> t, Data<?> u) {
-			Class<?> tType = t.getClass();
+			Class<? extends Data<?>> tType = (Class<? extends Data<?>>) t.getClass();
 			List<Handle<?>> possibleHandles = new LinkedList<>();
 
 			for (Handle<?> h : handles)
@@ -124,7 +124,11 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			if (selectedHandle == numberHandler)
 				return numberHandler.function.apply(t.toNumericData(), u.toNumericData());
 
-			return ((Handle<Data<?>>) selectedHandle).function.apply(selectedHandle.cls.cast(t), u);
+			try {
+				return ((Handle<Data<?>>) selectedHandle).function.apply(Data.castUnknown(t, selectedHandle.cls), u);
+			} catch (InstantiationException | IllegalAccessException e) {
+				throw new RuntimeException("The developer has made an error. Please send them the stacktrace.", e);
+			}
 		}
 
 	}
