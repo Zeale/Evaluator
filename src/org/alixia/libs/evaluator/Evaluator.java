@@ -427,9 +427,8 @@ public class Evaluator {
 
 							equation.skip();
 						}
-					} else {
+					} else
 						break;
-					}
 					equation.skip();
 				}
 				// If an unexpected char is found, assume end of term. This may be changed

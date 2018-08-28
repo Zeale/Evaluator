@@ -1,6 +1,10 @@
 package org.alixia.libs.evaluator.api.terms;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import org.alixia.libs.evaluator.api.types.Data;
+import org.alixia.libs.evaluator.api.types.NumericData;
 
 public interface Term<DT extends Data<?>> {
 	DT evaluate();
@@ -21,6 +25,14 @@ public interface Term<DT extends Data<?>> {
 						e);
 			}
 		};
+	}
+
+	static Term<NumericData> factorial(Term<?> inputTerm) {
+		BigInteger result = BigInteger.ONE, input = inputTerm.evaluate().toNumericData().evaluate().toBigInteger();
+		for (BigInteger i = BigInteger.ONE; i.compareTo(input) < 1; i = i.add(BigInteger.ONE))
+			result = result.multiply(i);
+		return Term.wrap(new NumericData(new BigDecimal(result)));
+	
 	}
 
 	static <CT, CDT extends Data<CT>, ODT extends Data<?>> Term<CDT> castTerm(Term<ODT> originalTerm,
