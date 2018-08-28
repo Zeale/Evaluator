@@ -124,11 +124,7 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			if (selectedHandle == numberHandler)
 				return numberHandler.function.apply(t.toNumericData(), u.toNumericData());
 
-			try {
-				return ((Handle<Data<?>>) selectedHandle).function.apply(Data.castUnknown(t, selectedHandle.cls), u);
-			} catch (InstantiationException | IllegalAccessException e) {
-				throw new RuntimeException("The developer has made an error. Please send them the stacktrace.", e);
-			}
+			return ((Handle<Data<?>>) selectedHandle).function.apply(Data.castUnknown(t, selectedHandle.cls), u);
 		}
 
 	}

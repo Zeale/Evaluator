@@ -15,16 +15,7 @@ public interface Term<DT extends Data<?>> {
 
 	static <CT, CDT extends Data<CT>, ODT extends Data<?>> Term<CDT> castWrap(ODT originalData,
 			Class<CDT> castDataConstructorGateway) {
-		return () -> {
-			try {
-				return Data.cast(originalData, castDataConstructorGateway);
-			} catch (InstantiationException | IllegalAccessException e) {
-				e.printStackTrace();
-				throw new RuntimeException(
-						"The darn devs are back at it again! (A casting error occurred because a data type does not follow specifications.)",
-						e);
-			}
-		};
+		return () -> Data.cast(originalData, castDataConstructorGateway);
 	}
 
 	static Term<NumericData> factorial(Term<?> inputTerm) {
@@ -32,7 +23,7 @@ public interface Term<DT extends Data<?>> {
 		for (BigInteger i = BigInteger.ONE; i.compareTo(input) < 1; i = i.add(BigInteger.ONE))
 			result = result.multiply(i);
 		return Term.wrap(new NumericData(new BigDecimal(result)));
-	
+
 	}
 
 	static <CT, CDT extends Data<CT>, ODT extends Data<?>> Term<CDT> castTerm(Term<ODT> originalTerm,
