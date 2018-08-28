@@ -52,12 +52,6 @@ public enum StandardOperators implements NormalOperator, Precedented {
 	}
 
 	@Override
-	public void evaluate(ChainTerm<?>.MathChain chain, ChainTerm<?>.MathChain.MathIterator iterator) {
-		System.out.println(chain);
-		NormalOperator.super.evaluate(chain, iterator);
-	}
-
-	@Override
 	public Precedence precedence() {
 		return precedence;
 	}

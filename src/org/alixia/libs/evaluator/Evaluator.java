@@ -17,10 +17,7 @@ import org.alixia.libs.evaluator.api.Spate;
 import org.alixia.libs.evaluator.api.VariableMap;
 import org.alixia.libs.evaluator.api.VariableMap.Variable;
 import org.alixia.libs.evaluator.api.functions.SimpleFunction;
-import org.alixia.libs.evaluator.api.operators.MultiOperator;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
-import org.alixia.libs.evaluator.api.operators.Operator;
-import org.alixia.libs.evaluator.api.operators.SimpleOperator;
 import org.alixia.libs.evaluator.api.terms.ChainTerm;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.Data;
@@ -38,36 +35,6 @@ public class Evaluator {
 	{
 		typeMap.new Type(NumericData.class, "number");
 		typeMap.new Type(TimeData.class, "time");
-	}
-
-	private static final class EquationFragment {
-		private Term<?> term;
-		private Operator operator;
-
-		private boolean last;
-
-		public EquationFragment(Term<?> term, Operator operator) {
-			this.term = term;
-			this.operator = operator;
-		}
-
-		public boolean isLast() {
-			return last;
-		}
-
-		public EquationFragment(Term<?> term, MultiOperator op, boolean b) {
-			this(term, op);
-			last = b;
-		}
-
-		public Term<?> getTerm() {
-			return term;
-		}
-
-		public Operator getOperator() {
-			return operator;
-		}
-
 	}
 
 	public VariableMap getVariableMap() {
@@ -108,36 +75,6 @@ public class Evaluator {
 
 	private int box(final Character character) {
 		return character == null ? -1 : character;
-	}
-
-	/**
-	 * This method parses an equation from {@link #equation}. It expects
-	 * {@link #equation} to be set. It only parses the actual equation, not any
-	 * variable assignments. (If those exist, they should already be parsed when
-	 * this method is called.
-	 * 
-	 * @return Returns a {@link ChainTerm} of a parsed equation.
-	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public synchronized ChainTerm<?> chain() {
-
-		// Check to see if the equation is empty.
-		Character c;
-		while (Character.isWhitespace(box(c = equation.peek())))
-			equation.skip();
-		if (c == null)
-			throw new RuntimeException("Equation has no evaluatable content.");
-
-		EquationFragment frag = parseTermContents();
-		final ChainTerm<?> parse = new ChainTerm<>(frag.getTerm());
-		while (!frag.isLast()) {
-			Operator previousOp = frag.getOperator();
-			frag = parseTermContents();
-			parse.append(previousOp, (Term) frag.getTerm());
-		}
-		if (frag.getOperator() != null)
-			parse.append(frag.getOperator(), MultiOperator.NULL_TERM);
-		return parse;
 	}
 
 	/**
@@ -266,18 +203,49 @@ public class Evaluator {
 			throw new RuntimeException("Could not parse the operator, '" + (char) c + "'");
 	}
 
-	@SuppressWarnings("unchecked")
-	private EquationFragment parseTermContents() {
+	public synchronized Data<?> solve(final Spate<Character> equation) {
+		this.equation = equation;
+		return chain().evaluate();
+	}
 
-		List<Operator> otherOperators = new LinkedList<>();
+	/**
+	 * This method parses an equation from {@link #equation}. It expects
+	 * {@link #equation} to be set. It only parses the actual equation, not any
+	 * variable assignments. (If those exist, they should already be parsed when
+	 * this method is called.
+	 * 
+	 * @return Returns a {@link ChainTerm} of a parsed equation.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public synchronized ChainTerm<?> chain() {
+	
+		// Check to see if the equation is empty.
+		Character c;
+		while (Character.isWhitespace(box(c = equation.peek())))
+			equation.skip();
+		if (c == null)
+			throw new RuntimeException("Equation has no evaluatable content.");
+	
+		final ChainTerm<?> parse = new ChainTerm<>(parseTerm());
+		clearWhitespace(null);
+		while (equation.hasNext()) {
+			parse.append((NormalOperator) parseOperator(), (Term) parseTerm());
+			clearWhitespace(null);// For the while loop.
+		}
+		return parse;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Term<?> parseTermContents() {
+	
 		// Check for whitespace. Stop where equation.next() will return the first
 		// non-whitepsace char.
 		clearWhitespace("The equation ended prematurely; another term was expected.");
-
+	
 		List<Class<? extends Data<?>>> castList = new LinkedList<>();
-
+	
 		Term<?> term;
-
+	
 		int c;
 		boolean negate = false;
 		TERM_LOOP: while (true) {
@@ -303,14 +271,14 @@ public class Evaluator {
 						break;
 					}
 				}
-
+	
 				Class<? extends Data<?>> typeCls = typeMap.get(type);
 				if (typeCls == null)
 					throw new RuntimeException("Couldn't discern a type from the given reference: " + type + ".");
 				castList.add(typeCls);
-
+	
 				continue TERM_LOOP;// This allows multiple casts to take place.
-
+	
 			} else if (c == '+')// Force Positive
 				negate = false;
 			else if (c == '-')// Flip Negativity
@@ -329,7 +297,7 @@ public class Evaluator {
 					name += (char) c;
 					equation.skip();
 				}
-
+	
 				Boolean isFunction;// true indicates that "function::" prefixing was used, false indicates that
 									// such was used, but for variables, and null indicates that no forcing was
 									// determined off of prefix detection.
@@ -347,27 +315,27 @@ public class Evaluator {
 					isFunction = null;
 				if (isFunction != null && (name = name.substring(name.indexOf("::") + 2)).isEmpty())
 					throw new RuntimeException("No " + (isFunction ? "function" : "variable") + " name specified.");
-
+	
 				// TODO Match name against name database to determine if it's a function or
 				// variable.
-
+	
 				// Functions have a higher precedence than vars; if there is a name conflict, a
 				// the name will be parsed as the function rather than a variable, unless the
 				// "function::functionName" specifying syntax is used, or a tilde is used to
 				// force variable treatment.
-
+	
 				@SuppressWarnings("rawtypes")
 				final SimpleFunction function = SimpleFunction.getFunction(name);
-
+	
 				if (isFunction == null)// The indication by isFunction changes here.
 					isFunction = function == null ? false : true;
-
+	
 				if (isFunction) {
 					StandardWrapper parenthesis;
 					if (c == -1 || (parenthesis = StandardWrapper.openValueOf((char) c)) == null)
 						throw new RuntimeException(
 								name + " was determined to be a function, but was not followed by parentheses.");
-
+	
 					final List<String> args = parseFunctionArgs(parenthesis);
 					if (function == null)
 						throw new RuntimeException("Invalid function name: " + name
@@ -389,7 +357,7 @@ public class Evaluator {
 					term = variable::getValue;
 					break TERM_LOOP;
 				}
-
+	
 			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
 				String content = "";
 				OUTER: while (true) {
@@ -424,11 +392,12 @@ public class Evaluator {
 								term = Term.wrap(new TimeData(content));
 								break TERM_LOOP;
 							}
-
+	
 							equation.skip();
 						}
-					} else
+					} else {
 						break;
+					}
 					equation.skip();
 				}
 				// If an unexpected char is found, assume end of term. This may be changed
@@ -439,43 +408,47 @@ public class Evaluator {
 				term = new org.alixia.libs.evaluator.api.terms.Number(
 						new NumericData(new BigDecimal(content).multiply(new BigDecimal((negate ? -1 : 1)))));
 				break TERM_LOOP;
-
+	
 			} else if (c == -1)
 				throw new RuntimeException("Expected a term but found the end of the equation.");
 			else if (!Character.isWhitespace(c))
 				throw new RuntimeException("Unexpected character while parsing a term: " + (char) c);
 			equation.skip();
 		} // Leaves off before first digit.
-
+	
 		for (Class<? extends Data<?>> c0 : castList)
 			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
-
-		// A factorial must IMMEDIATELY follow its term. If an exclamation mark is found
-		// otherwise, it's a syntactic error.
-		boolean foundFactorial;
-		if (foundFactorial = box(equation.peek()) == '!') {
-			equation.skip();
-			otherOperators.add(SimpleOperator.FACTORIAL);
-		}
-
-		clearWhitespace(null);
-
-		// TODO This will be removed alongside the addition of the "!" character's use
-		// of negating boolean expressions.
-		if (box(equation.peek()) == '!' && !foundFactorial)
-			throw new RuntimeException("A factorial was separated from its term by whitespace. This is not allowed.");
-		MultiOperator op = new MultiOperator();
-		op.setCombiningOperator(equation.hasNext() ? parseOperator() : MultiOperator.NULL_DELETE_OPERATOR);
-		for (Operator o : otherOperators)
-			op.addOperators(o);
-
-		return new EquationFragment(term, op, !equation.hasNext());
-
+	
+		return term;
+	
 	}
 
-	public synchronized Data<?> solve(final Spate<Character> equation) {
-		this.equation = equation;
-		return chain().evaluate();
+	@SuppressWarnings("unchecked")
+	private Term<?> parseTerm() {
+		Term<?> value = parseTermContents();
+		int c = box(equation.peek());
+		if (!clearWhitespace(null)) {// The next char is not whitespace.
+			c = box(equation.peek());
+			if (c == '!') {
+				if (value instanceof org.alixia.libs.evaluator.api.terms.Number
+						&& ((org.alixia.libs.evaluator.api.terms.Number) value).evaluate().evaluate()
+								.remainder(BigDecimal.ONE).doubleValue() != 0)
+					throw new RuntimeException(
+							"Factorial can only be applied to an integer number; decimals cannot have factorial applied to them. To get a similar effect on a decimal, use the gamma function. (GAMMA FUNCTION NOT AVAILABLE YET).");
+				try {
+					value = new FactorialTermWrapper((Term<NumericData>) value);
+				} catch (ClassCastException e) {
+					throw new RuntimeException(
+							"Factorial was applied to some data which was not applicable for factorial.");
+				}
+				// Right now, peek returns '!'. That's why we're in this if block.
+				equation.skip();// Skip over the exclamation point so that the next read operation
+								// (either next or peek) won't see it.
+			}
+		}
+	
+		return value;
+	
 	}
 
 	public static BigDecimal roundBigDecimal_old(String decimal) {
