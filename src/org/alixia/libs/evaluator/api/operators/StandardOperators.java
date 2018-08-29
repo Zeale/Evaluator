@@ -10,10 +10,10 @@ import org.alixia.libs.evaluator.Evaluator;
 import org.alixia.libs.evaluator.api.operators.StandardOperators.OperatorFunction.Handle;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.BooleanData;
+import org.alixia.libs.evaluator.api.types.BooleanData.BiBoolFunction;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
 import org.alixia.libs.evaluator.api.types.TimeData;
-import org.alixia.libs.evaluator.api.types.BooleanData.BiBoolFunction;
 
 public enum StandardOperators implements NormalOperator, Precedented {
 	ADD(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::add),
@@ -27,9 +27,10 @@ public enum StandardOperators implements NormalOperator, Precedented {
 				return new TimeData(t.evaluate().plusSeconds(-getFront(value).longValue()).plusNanos(-getBack(value)));
 			})), 1),
 	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
-	EXPONENTIATION((BigDecimalHandler) (a, b) -> a.pow(b.intValue()), 3),
+	EXPONENTIATION((t, u) -> t instanceof BooleanData ? ((BooleanData) t).xor(Data.cast(u, BooleanData.class))
+			: new NumericData(t.toNumericData().evaluate().pow(u.toNumericData().evaluate().intValue())), 3),
 	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2), AND((BiBoolFunction) BooleanData::and, 5),
-	OR((BiBoolFunction) BooleanData::or, 4), XOR((BiBoolFunction) BooleanData::or, 6);
+	OR((BiBoolFunction) BooleanData::or, 4);
 
 	public static BigInteger getFront(BigDecimal number) {
 		return number.toBigInteger();

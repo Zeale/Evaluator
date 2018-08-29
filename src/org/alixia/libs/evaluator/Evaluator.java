@@ -208,8 +208,7 @@ public class Evaluator {
 			if (equation.peek() == c)
 				equation.skip();
 			return AND;
-		} // TODO Parse XOR.
-		else if (c == '|') {
+		} else if (c == '|') {
 			if (equation.peek() == c)
 				equation.skip();
 			return OR;
