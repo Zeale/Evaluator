@@ -6,6 +6,7 @@ import static org.alixia.libs.evaluator.api.operators.StandardOperators.EXPONENT
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.MODULUS;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.MULTIPLY;
 import static org.alixia.libs.evaluator.api.operators.StandardOperators.SUBTRACT;
+import static org.alixia.libs.evaluator.api.operators.StandardOperators.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -82,8 +83,7 @@ public class Evaluator {
 	 * Clears any whitespace, and returns true if the next character is the end of
 	 * the equation.
 	 * 
-	 * @param err
-	 *            The error to throw if the end of the equation is found.
+	 * @param err The error to throw if the end of the equation is found.
 	 * @return <code>true</code> if an error was not thrown and the end of the
 	 *         equation is found, <code>false</code> if an error was not thrown and
 	 *         the end of the equation was not found (i.e. another character that
@@ -201,7 +201,16 @@ public class Evaluator {
 			return MODULUS;
 		else if (c == '^')
 			return EXPONENTIATION;
-		else
+		else if (c == '&') {
+			if (equation.peek() == c)
+				equation.skip();
+			return AND;
+		} // TODO Parse XOR.
+		else if (c == '|') {
+			if (equation.peek() == c)
+				equation.skip();
+			return OR;
+		} else
 			throw new RuntimeException("Could not parse the operator, '" + (char) c + "'");
 	}
 
@@ -459,8 +468,7 @@ public class Evaluator {
 	 * Strips the trailing zeros off of a {@link BigDecimal}, and returns a new
 	 * {@link BigDecimal} representing the old one without the extra zeros.
 	 * 
-	 * @param decimal
-	 *            The decimal to strip.
+	 * @param decimal The decimal to strip.
 	 * @return A new {@link BigDecimal} without excess zeroes.
 	 * 
 	 *         Yes this function is named badly.
