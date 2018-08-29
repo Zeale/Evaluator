@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import org.alixia.libs.evaluator.api.VariableMap.Variable;
+import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
 
@@ -11,6 +12,8 @@ public class VariableMap extends HashSet<Variable<?>> {
 
 	public final Variable<NumericData> PI = new Variable<>("pi", new NumericData(Math.PI)),
 			E = new Variable<>("E", new NumericData(Math.E));
+	public final Variable<BooleanData> TRUE = new Variable<>("true", new BooleanData(true)),
+			FALSE = new Variable<>("false", new BooleanData(false));
 
 	/**
 	 * SUID

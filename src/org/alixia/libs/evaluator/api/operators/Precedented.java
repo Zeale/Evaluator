@@ -30,6 +30,8 @@ public interface Precedented {
 		public String toString() {
 			return "" + precedence;
 		}
+		
+		public static final Precedence NONE = new Precedence(Integer.MIN_VALUE);
 
 	}
 

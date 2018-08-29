@@ -54,10 +54,18 @@ public interface Data<T> {
 
 	String toStringValue();
 
+	static <CT, CDT extends Data<CT>, ODT extends Data<?>> CDT cast(ODT data, Class<CDT> castType) {
+		return castUnknown(data, castType);
+	}
+
 	@SuppressWarnings("unchecked")
-	static <CT, CDT extends Data<CT>, ODT extends Data<?>> CDT cast(ODT data, Class<CDT> castType)
-			throws InstantiationException, IllegalAccessException {
-		return (CDT) castType.newInstance().cast(data);
+	static <CDT extends Data<?>, ODT extends Data<?>> CDT castUnknown(ODT data, Class<CDT> castType) {
+		try {
+			return (CDT) castType.newInstance().cast(data);
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new RuntimeException("The developer has made an error. Please send them the stacktrace. :P", e);
+
+		}
 	}
 
 }
