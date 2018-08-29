@@ -33,6 +33,7 @@ public class Evaluator {
 	private final VariableMap variableMap = new VariableMap();
 	private final SimpleTypeMap typeMap = new SimpleTypeMap();
 	{
+		// TODO Add BooleanData cast.
 		typeMap.new Type(NumericData.class, "number");
 		typeMap.new Type(TimeData.class, "time");
 	}
@@ -81,7 +82,8 @@ public class Evaluator {
 	 * Clears any whitespace, and returns true if the next character is the end of
 	 * the equation.
 	 * 
-	 * @param err The error to throw if the end of the equation is found.
+	 * @param err
+	 *            The error to throw if the end of the equation is found.
 	 * @return <code>true</code> if an error was not thrown and the end of the
 	 *         equation is found, <code>false</code> if an error was not thrown and
 	 *         the end of the equation was not found (i.e. another character that
@@ -247,7 +249,11 @@ public class Evaluator {
 		Term<?> term;
 
 		int c;
-		boolean negate = false;
+		boolean numericNegation = false, logicalNegation = false;
+
+		if (logicalNegation = box(equation.peek()) == '!')
+			equation.skip();
+
 		TERM_LOOP: while (true) {
 			c = box(equation.peek());
 			if (c == StandardWrapper.CHEVRONS.getOpener()) {
@@ -280,9 +286,9 @@ public class Evaluator {
 				continue TERM_LOOP;// This allows multiple casts to take place.
 
 			} else if (c == '+')// Force Positive
-				negate = false;
+				numericNegation = false;
 			else if (c == '-')// Flip Negativity
-				negate ^= true;
+				numericNegation ^= true;
 			else if (c == '(') {// Nest
 				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
@@ -406,7 +412,7 @@ public class Evaluator {
 				if (content.charAt(content.length() - 1) == '.')
 					throw new RuntimeException("Unnecessary decimal found.");
 				term = new org.alixia.libs.evaluator.api.terms.Number(
-						new NumericData(new BigDecimal(content).multiply(new BigDecimal((negate ? -1 : 1)))));
+						new NumericData(new BigDecimal(content).multiply(new BigDecimal((numericNegation ? -1 : 1)))));
 				break TERM_LOOP;
 
 			} else if (c == -1)
@@ -423,6 +429,11 @@ public class Evaluator {
 			equation.skip();
 			term = Term.factorial(term);
 		}
+
+		// TODO Check to see if the term is actually of the type boolean. Otherwise,
+		// throw an exception.
+		if (logicalNegation)
+			term = Term.not((Term<? extends Data<? extends Boolean>>) term);
 
 		return term;
 	}
@@ -448,7 +459,8 @@ public class Evaluator {
 	 * Strips the trailing zeros off of a {@link BigDecimal}, and returns a new
 	 * {@link BigDecimal} representing the old one without the extra zeros.
 	 * 
-	 * @param decimal The decimal to strip.
+	 * @param decimal
+	 *            The decimal to strip.
 	 * @return A new {@link BigDecimal} without excess zeroes.
 	 * 
 	 *         Yes this function is named badly.
