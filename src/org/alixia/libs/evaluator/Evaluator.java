@@ -213,7 +213,7 @@ public class Evaluator {
 		clearWhitespace("The equation ended permaturely; an operator was expected.");
 
 		final int c = equation.peek();
-		if (c == '(' || Character.isLetterOrDigit(c) || c == '.' || c == '_')
+		if (c == '(' || Character.isLetterOrDigit(c) || c == '.' || c == '_' || c == '<')
 			return MULTIPLY;
 
 		equation.skip();
