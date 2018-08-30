@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.alixia.libs.evaluator.api.Chain;
+import org.alixia.libs.evaluator.api.exceptions.DeveloperException;
 import org.alixia.libs.evaluator.api.operators.NormalOperator;
 import org.alixia.libs.evaluator.api.operators.Precedented;
 import org.alixia.libs.evaluator.api.operators.Precedented.Precedence;
@@ -133,7 +134,10 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 
 		if (chain.size() != 1)
 			try {
-				throw new RuntimeException("A ChainTerm was evaluated, but ended up having a size greater than one.");
+				// This code might be completely useless; I haven't really fully thought about
+				// how evaluation works, so there might not be a way for it to possibly mess up.
+				throw new DeveloperException(
+						"A ChainTerm was evaluated, but ended up having a size greater than one. You should totes report this to the developer, and tell them what equation caused this problem.");
 			} catch (RuntimeException e) {
 				e.printStackTrace();
 			}

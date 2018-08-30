@@ -24,4 +24,9 @@ public abstract class EvaluationException extends RuntimeException {
 		generalLocation = null;
 	}
 
+	public EvaluationException(String message) {
+		super(message);
+		generalLocation = null;
+	}
+
 }

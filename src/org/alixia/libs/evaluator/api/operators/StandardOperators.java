@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 import org.alixia.libs.evaluator.Evaluator;
+import org.alixia.libs.evaluator.api.exceptions.DeveloperException;
 import org.alixia.libs.evaluator.api.operators.StandardOperators.OperatorFunction.Handle;
 import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.BooleanData;
@@ -78,7 +79,7 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			this.numberHandler = numberHandler;
 			for (Handle<?> h : others) {
 				if (handles.contains(h) || h.cls == numberHandler.cls)
-					throw new RuntimeException("This operator already contains a handle for the type, " + h.cls
+					throw new DeveloperException("This operator already contains a handle for the type, " + h.cls
 							+ ". Violating handle: " + h + ".");
 				handles.add(h);
 			}
