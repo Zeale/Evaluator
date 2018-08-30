@@ -2,6 +2,7 @@ package org.alixia.libs.evaluator.api.types.casting;
 
 import java.lang.reflect.Modifier;
 
+import org.alixia.libs.evaluator.api.exceptions.UnresolvableTypeException;
 import org.alixia.libs.evaluator.api.types.Data;
 
 public interface DefaultTypeMap extends TypeMap {
@@ -15,7 +16,8 @@ public interface DefaultTypeMap extends TypeMap {
 			Class<?> resolvedClass = Class.forName(absoluteName);
 			if (!Data.class.isAssignableFrom(resolvedClass) || Modifier.isAbstract(resolvedClass.getModifiers())
 					|| Modifier.isInterface(resolvedClass.getModifiers()))
-				throw new RuntimeException("The specified class is not a viable Data type.");
+				throw new UnresolvableTypeException("The specified class is not a viable Data type.",
+						(CharSequence) ref);
 			else
 				return (Class<? extends Data<?>>) resolvedClass;
 		} catch (ClassNotFoundException e) {
