@@ -267,9 +267,6 @@ public class Evaluator {
 		int c;
 		boolean numericNegation = false, logicalNegation = false;
 
-		if (logicalNegation = box(equation.peek()) == '!')
-			equation.skip();
-
 		TERM_LOOP: while (true) {
 			c = box(equation.peek());
 			if (c == StandardWrapper.CHEVRONS.getOpener()) {
@@ -301,11 +298,16 @@ public class Evaluator {
 
 				continue TERM_LOOP;// This allows multiple casts to take place.
 
-			} else if (c == '+')// Force Positive
+			} else if (c == '+') {// Force Positive
 				numericNegation = false;
-			else if (c == '-')// Flip Negativity
+				castList.add(NumericData.class);
+			} else if (c == '-') {// Flip Negativity
 				numericNegation ^= true;
-			else if (c == '(') {// Nest
+				castList.add(NumericData.class);
+			} else if (c == '!') {
+				logicalNegation ^= logicalNegation;
+				castList.add(BooleanData.class);
+			} else if (c == '(') {// Nest
 				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
@@ -438,8 +440,9 @@ public class Evaluator {
 			equation.skip();
 		} // Leaves off before first digit.
 
-		for (Class<? extends Data<?>> c0 : castList)
-			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
+		// Apply casts in order.
+		for (int i = castList.size() - 1; i >= 0; i--)
+			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) castList.get(i));
 
 		if (box(equation.peek()) == '!') {
 			equation.skip();
