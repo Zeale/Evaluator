@@ -13,6 +13,7 @@ import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.BooleanData.BiBoolFunction;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.StringData;
 import org.alixia.libs.evaluator.api.types.TimeData;
 
 public enum StandardOperators implements NormalOperator, Precedented {
@@ -20,7 +21,7 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			new Handle<>(TimeData.class, (t, u) -> {
 				BigDecimal value = u.toNumericData().evaluate();
 				return new TimeData(t.evaluate().plusSeconds(getFront(value).longValue()).plusNanos(getBack(value)));
-			})), 1),
+			}), new Handle<>(StringData.class, (t, u) -> new StringData(t.evaluate() + u.evaluate()))), 1),
 	SUBTRACT(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::subtract),
 			new Handle<>(TimeData.class, (t, u) -> {
 				BigDecimal value = u.toNumericData().evaluate();
