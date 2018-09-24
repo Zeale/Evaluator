@@ -24,6 +24,7 @@ import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.StringData;
 import org.alixia.libs.evaluator.api.types.TimeData;
 import org.alixia.libs.evaluator.api.types.casting.SimpleTypeMap;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
@@ -40,6 +41,10 @@ public class Evaluator {
 		typeMap.new Type(TimeData.class, "time");
 		typeMap.new Type(BooleanData.class, "boolean");
 		typeMap.new Type(BooleanData.class, "bool");
+		typeMap.new Type(StringData.class, "string");
+		typeMap.new Type(StringData.class, "str");
+		typeMap.new Type(StringData.class, "text");
+		typeMap.new Type(StringData.class, "txt");
 	}
 
 	public VariableMap getVariableMap() {
