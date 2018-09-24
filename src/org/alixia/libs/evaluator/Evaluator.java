@@ -435,8 +435,9 @@ public class Evaluator {
 			equation.skip();
 		} // Leaves off before first digit.
 
-		for (Class<? extends Data<?>> c0 : castList)
-			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) c0);
+		// Apply casts in order.
+		for (int i = castList.size() - 1; i >= 0; i--)
+			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) castList.get(i));
 
 		if (box(equation.peek()) == '!') {
 			equation.skip();
