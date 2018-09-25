@@ -457,6 +457,49 @@ public class Evaluator {
 		return term;
 	}
 
+	/**
+	 * <p>
+	 * Starts where {@link #equation}'s {@link Spate#peek()} will return the first
+	 * character <b>inside</b> the string to be parsed.
+	 * <p>
+	 * Handles escaped quotations and escaped backslashes using backslashes as
+	 * escape chars.
+	 * 
+	 * @return The parse {@link String}.
+	 */
+	public String parseString() {
+		String string = "";
+		int c;
+		boolean escaped = false;
+		while (true) {
+			c = box(equation.peek());
+			if (c == '\\')
+				if (escaped) {
+					string += '\\';
+					escaped = false;
+				} else
+					escaped = true;
+			else if (c == '"')
+				if (escaped) {
+					string += '"';
+					escaped = false;
+				} else
+					break;
+			else if (c == -1)
+				throw new RuntimeException("No closing \" found while parsing a String.");
+			else {
+				if (escaped) {
+					string += '\\';
+					escaped = false;
+				}
+				string += (char) c;
+			}
+			equation.skip();
+		}
+
+		return string;
+	}
+
 	public static BigDecimal roundBigDecimal_old(String decimal) {
 		int i = decimal.indexOf('.');
 		if (i == -1)
