@@ -39,6 +39,7 @@ public class Evaluator {
 	{
 		// TODO Add BooleanData cast.
 		typeMap.new Type(NumericData.class, "number");
+		typeMap.new Type(NumericData.class, "numb");
 		typeMap.new Type(TimeData.class, "time");
 		typeMap.new Type(BooleanData.class, "boolean");
 		typeMap.new Type(BooleanData.class, "bool");
@@ -46,6 +47,8 @@ public class Evaluator {
 		typeMap.new Type(StringData.class, "str");
 		typeMap.new Type(StringData.class, "text");
 		typeMap.new Type(StringData.class, "txt");
+		typeMap.new Type(ProbabilityData.class, "prob");
+		typeMap.new Type(ProbabilityData.class, "probability");
 	}
 
 	public VariableMap getVariableMap() {
