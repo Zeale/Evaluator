@@ -9,7 +9,8 @@ public class ProbabilityData extends SimpleData<BigDecimal> {
 	}
 
 	public ProbabilityData(BigDecimal value) {
-		super(value);
+		super(value.compareTo(BigDecimal.ONE) == 1 ? BigDecimal.ONE
+				: value.compareTo(BigDecimal.ZERO) == -1 ? BigDecimal.ZERO : value);
 	}
 
 	public ProbabilityData(Data<?> data) {
@@ -24,8 +25,7 @@ public class ProbabilityData extends SimpleData<BigDecimal> {
 
 	@Override
 	public NumericData toNumericData() {
-		// TODO Auto-generated method stub
-		return null;
+		return new NumericData(value);
 	}
 
 	@Override
