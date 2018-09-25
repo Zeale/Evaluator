@@ -24,6 +24,7 @@ import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.ProbabilityData;
 import org.alixia.libs.evaluator.api.types.StringData;
 import org.alixia.libs.evaluator.api.types.TimeData;
 import org.alixia.libs.evaluator.api.types.casting.SimpleTypeMap;
@@ -38,6 +39,7 @@ public class Evaluator {
 	{
 		// TODO Add BooleanData cast.
 		typeMap.new Type(NumericData.class, "number");
+		typeMap.new Type(NumericData.class, "numb");
 		typeMap.new Type(TimeData.class, "time");
 		typeMap.new Type(BooleanData.class, "boolean");
 		typeMap.new Type(BooleanData.class, "bool");
@@ -45,6 +47,8 @@ public class Evaluator {
 		typeMap.new Type(StringData.class, "str");
 		typeMap.new Type(StringData.class, "text");
 		typeMap.new Type(StringData.class, "txt");
+		typeMap.new Type(ProbabilityData.class, "prob");
+		typeMap.new Type(ProbabilityData.class, "probability");
 	}
 
 	public VariableMap getVariableMap() {
@@ -387,11 +391,12 @@ public class Evaluator {
 					break;
 				}
 
-			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
+			} else if (Character.isDigit(c) || c == '.') {// Parse Number, Time, or Probability
 				String content = "";
+				boolean prob = false;
 				OUTER: while (true) {
 					c = box(equation.peek());
-					if (c == '.') {// Parse Number
+					if (c == '.') {// Parse Number or Probability
 						content += '.';
 						equation.skip();
 						while (true) {
@@ -400,7 +405,11 @@ public class Evaluator {
 								content += (char) c;
 							else if (c == '.')
 								throw new RuntimeException("Encountered multiple decimal points in a number.");
-							else
+							else if (c == '%') {// Parse probability.
+								prob = true;
+								content += '%';
+								break OUTER;
+							} else
 								break OUTER;
 							equation.skip();
 						}
@@ -424,18 +433,38 @@ public class Evaluator {
 
 							equation.skip();
 						}
+					} else if (c == '%') {
+						prob = true;
+						content += '%';
+						break OUTER;
 					} else {
 						break;
 					}
-					equation.skip();
+					equation.skip();// peek() will return the char immediately after what we parsed.
 				}
-				// If an unexpected char is found, assume end of term. This may be changed
-				// later, but, until then, with the addition of operators later on, this
-				// behavior will remain safe.
-				if (content.charAt(content.length() - 1) == '.')
-					throw new RuntimeException("Unnecessary decimal found.");
-				term = new org.alixia.libs.evaluator.api.terms.Number(
-						new NumericData(new BigDecimal(content).multiply(new BigDecimal((numericNegation ? -1 : 1)))));
+
+				if (prob) {
+					if (content.length() < 2)
+						throw new RuntimeException("Expected a value before \"%\".");
+					BigDecimal value = new BigDecimal(content.substring(0, content.indexOf("%")))
+							.divide(new BigDecimal(100));
+					if (value.compareTo(BigDecimal.ONE) == 1)
+						throw new RuntimeException(
+								"Encountered a value that has been designated as a probability but is too large to be a probability: "
+										+ value + ".");
+					else if (value.compareTo(BigDecimal.ZERO) == -1)
+						throw new RuntimeException(
+								"Encountered a value that has been designated as a probability but is too low to be a probability: "
+										+ value + ".");
+					else
+						term = Term.wrap(new ProbabilityData(value));
+					equation.skip();
+				} else {
+					if (content.charAt(content.length() - 1) == '.')
+						throw new RuntimeException("Unnecessary decimal found.");
+					term = new org.alixia.libs.evaluator.api.terms.Number(new NumericData(
+							new BigDecimal(content).multiply(new BigDecimal(numericNegation ? -1 : 1))));
+				}
 				break TERM_LOOP;
 
 			} else if (c == -1)
