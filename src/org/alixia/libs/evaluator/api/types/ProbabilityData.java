@@ -36,7 +36,7 @@ public class ProbabilityData extends SimpleData<BigDecimal> {
 
 	@Override
 	public String toStringValue() {
-		return value.toString() + "%";
+		return value.multiply(new BigDecimal(100)).toString() + "%";
 	}
 
 	@Override

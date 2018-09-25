@@ -439,11 +439,12 @@ public class Evaluator {
 					}
 					equation.skip();// peek() will return the char immediately after what we parsed.
 				}
-				
+
 				if (prob) {
 					if (content.length() < 2)
 						throw new RuntimeException("Expected a value before \"%\".");
-					BigDecimal value = new BigDecimal(content.substring(0, content.indexOf("%")));
+					BigDecimal value = new BigDecimal(content.substring(0, content.indexOf("%")))
+							.divide(new BigDecimal(100));
 					if (value.compareTo(BigDecimal.ONE) == 1)
 						throw new RuntimeException(
 								"Encountered a value that has been designated as a probability but is too large to be a probability: "
@@ -454,11 +455,12 @@ public class Evaluator {
 										+ value + ".");
 					else
 						term = Term.wrap(new ProbabilityData(value));
+					equation.skip();
 				} else {
 					if (content.charAt(content.length() - 1) == '.')
 						throw new RuntimeException("Unnecessary decimal found.");
 					term = new org.alixia.libs.evaluator.api.terms.Number(new NumericData(
-							new BigDecimal(content).multiply(new BigDecimal((numericNegation ? -1 : 1)))));
+							new BigDecimal(content).multiply(new BigDecimal(numericNegation ? -1 : 1))));
 				}
 				break TERM_LOOP;
 
