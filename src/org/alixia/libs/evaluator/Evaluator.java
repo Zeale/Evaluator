@@ -296,7 +296,7 @@ public class Evaluator {
 					throw new RuntimeException("Couldn't discern a type from the given reference: " + type + ".");
 				castList.add(typeCls);
 
-				continue TERM_LOOP;// This allows multiple casts to take place.
+				continue;// This allows multiple casts to take place.
 
 			} else if (c == '+') {// Force Positive
 				numericNegation = false;
@@ -317,7 +317,7 @@ public class Evaluator {
 				if (nest == null)
 					throw new RuntimeException("Error while parsing some parentheses' content.");
 				term = nest;
-				break TERM_LOOP;
+				break;
 			} else if (Character.isLetter(c) || c == '_') {// Variable
 				String name = "" + (char) c;
 				equation.skip();// equation is now positioned at first function name char
@@ -374,7 +374,7 @@ public class Evaluator {
 					else if (args.size() > 1)
 						throw new RuntimeException("Excessive arguments passed to function, " + name + ".");
 					term = function.evaluate(new Evaluator(Spate.spate(args.get(0))).chain().evaluate());
-					break TERM_LOOP;
+					break;
 				} else {
 					if (c == '[')
 						throw new RuntimeException("Brackets were used to designate that " + name
@@ -384,7 +384,7 @@ public class Evaluator {
 						throw new RuntimeException("Invalid variable name: " + name
 								+ "; couldn't find a variable with the specified name.");
 					term = variable::getValue;
-					break TERM_LOOP;
+					break;
 				}
 
 			} else if (Character.isDigit(c) || c == '.') {// Parse Number or Time
