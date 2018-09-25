@@ -164,7 +164,24 @@ public class Evaluator {
 			c = box(equation.next());
 			if (c == -1)
 				return null;
-			else if (c == parentheses.getOpener())
+			else if (c == '"') {
+				boolean escaped = false;
+				while (true) {
+					c = box(equation.peek());
+					if (c == '\\')
+						escaped ^= true;
+					else if (c == '"')
+						if (escaped)
+							escaped = false;
+						else
+							break;
+					else if (c == -1)
+						throw new RuntimeException("No closing quotation mark (\") found while parsing a String.");
+					else if (escaped)
+						escaped = false;
+					equation.skip();
+				}
+			} else if (c == parentheses.getOpener())
 				break;
 		}
 		meets++;
@@ -173,7 +190,27 @@ public class Evaluator {
 			if (c == -1)
 				throw new RuntimeException("Equation ends prematurely; a closing '" + parentheses.getCloser()
 						+ "' was expected, but was not found.");
-			else if (c == parentheses.getOpener())
+			else if (c == '"') {
+				boolean escaped = false;
+				equation.skip();
+				chain += '"';
+				while (true) {
+					c = box(equation.peek());
+					if (c == '\\')
+						escaped ^= true;
+					else if (c == '"')
+						if (escaped)
+							escaped = false;
+						else
+							break;
+					else if (c == -1)
+						throw new RuntimeException("No closing quotation mark (\") found while parsing a String.");
+					else if (escaped)
+						escaped = false;
+					equation.skip();
+					chain += (char) c;
+				}
+			} else if (c == parentheses.getOpener())
 				meets++;
 			else if (c == parentheses.getCloser())
 				meets--;
@@ -182,6 +219,7 @@ public class Evaluator {
 				break;
 			chain += (char) c;
 		}
+		System.out.println(chain);
 		return new Evaluator(Spate.spate(chain)).chain();
 	}
 
@@ -472,7 +510,7 @@ public class Evaluator {
 	 * 
 	 * @return The parse {@link String}.
 	 */
-	public String parseString() {
+	private String parseString() {
 		String string = "";
 		int c;
 		boolean escaped = false;
@@ -491,7 +529,7 @@ public class Evaluator {
 				} else
 					break;
 			else if (c == -1)
-				throw new RuntimeException("No closing \" found while parsing a String.");
+				throw new RuntimeException("No closing quotation mark (\") found while parsing a String.");
 			else {
 				if (escaped) {
 					string += '\\';
