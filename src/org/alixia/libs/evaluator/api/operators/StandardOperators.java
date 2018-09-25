@@ -13,6 +13,7 @@ import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.BooleanData.BiBoolFunction;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.ProbabilityData;
 import org.alixia.libs.evaluator.api.types.StringData;
 import org.alixia.libs.evaluator.api.types.TimeData;
 
@@ -21,17 +22,39 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			new Handle<>(TimeData.class, (t, u) -> {
 				BigDecimal value = u.toNumericData().evaluate();
 				return new TimeData(t.evaluate().plusSeconds(getFront(value).longValue()).plusNanos(getBack(value)));
-			}), new Handle<>(StringData.class, (t, u) -> new StringData(t.evaluate() + u.evaluate()))), 1),
+			}), new Handle<>(StringData.class, (t, u) -> new StringData(t.evaluate() + u.evaluate())),
+			new Handle<ProbabilityData>(ProbabilityData.class,
+					(t, u) -> new ProbabilityData(t.evaluate().add(u.toNumericData().evaluate())))),
+			1),
 	SUBTRACT(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::subtract),
 			new Handle<>(TimeData.class, (t, u) -> {
 				BigDecimal value = u.toNumericData().evaluate();
 				return new TimeData(t.evaluate().plusSeconds(-getFront(value).longValue()).plusNanos(-getBack(value)));
-			})), 1),
-	MULTIPLY((BigDecimalHandler) BigDecimal::multiply, 2), DIVIDE((BigDecimalHandler) Evaluator::divideSafely, 2),
+			}),
+			new Handle<ProbabilityData>(ProbabilityData.class,
+					(t, u) -> new ProbabilityData(t.evaluate().subtract(u.toNumericData().evaluate())))),
+			1),
+	MULTIPLY(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) BigDecimal::multiply),
+			new Handle<>(ProbabilityData.class,
+					(t, u) -> new ProbabilityData(t.evaluate().multiply(u.toNumericData().evaluate())))),
+			2),
+	DIVIDE(new OperatorFunction(new Handle<>(NumericData.class, (BigDecimalHandler) Evaluator::divideSafely),
+			new Handle<>(ProbabilityData.class, (t, u) -> {
+				return new ProbabilityData(Evaluator.divideSafely(t.evaluate(), u.toNumericData().evaluate()));
+			})), 2),
 	EXPONENTIATION((t, u) -> t instanceof BooleanData ? ((BooleanData) t).xor(Data.cast(u, BooleanData.class))
 			: new NumericData(t.toNumericData().evaluate().pow(u.toNumericData().evaluate().intValue())), 3),
-	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2), AND((BiBoolFunction) BooleanData::and, 5),
-	OR((BiBoolFunction) BooleanData::or, 4);
+	MODULUS((BigDecimalHandler) BigDecimal::remainder, 2),
+	AND(new OperatorFunction(new Handle<>(NumericData.class, (BiBoolFunction) BooleanData::and),
+			new Handle<>(ProbabilityData.class, (t, u) -> {
+				BigDecimal value = t.evaluate().multiply(u.toNumericData().evaluate());
+				return u instanceof ProbabilityData ? new ProbabilityData(value) : new NumericData(value);
+			})), 5),
+	OR(new OperatorFunction(new Handle<>(NumericData.class, (BiBoolFunction) BooleanData::or),
+			new Handle<>(ProbabilityData.class, (t, u) -> {
+				BigDecimal value = t.evaluate().add(u.toNumericData().evaluate());
+				return u instanceof ProbabilityData ? new ProbabilityData(value) : new NumericData(value);
+			})), 4);
 
 	public static BigInteger getFront(BigDecimal number) {
 		return number.toBigInteger();
