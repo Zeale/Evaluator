@@ -307,6 +307,11 @@ public class Evaluator {
 			} else if (c == '!') {
 				logicalNegation ^= logicalNegation;
 				castList.add(BooleanData.class);
+			} else if (c == '"') {
+				equation.skip();
+				term = Term.wrap(new StringData(parseString()));
+				equation.skip();
+				break;
 			} else if (c == '(') {// Nest
 				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
