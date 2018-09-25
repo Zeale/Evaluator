@@ -24,6 +24,7 @@ import org.alixia.libs.evaluator.api.terms.Term;
 import org.alixia.libs.evaluator.api.types.BooleanData;
 import org.alixia.libs.evaluator.api.types.Data;
 import org.alixia.libs.evaluator.api.types.NumericData;
+import org.alixia.libs.evaluator.api.types.StringData;
 import org.alixia.libs.evaluator.api.types.TimeData;
 import org.alixia.libs.evaluator.api.types.casting.SimpleTypeMap;
 import org.alixia.libs.evaluator.api.wrappers.StandardWrapper;
@@ -40,6 +41,10 @@ public class Evaluator {
 		typeMap.new Type(TimeData.class, "time");
 		typeMap.new Type(BooleanData.class, "boolean");
 		typeMap.new Type(BooleanData.class, "bool");
+		typeMap.new Type(StringData.class, "string");
+		typeMap.new Type(StringData.class, "str");
+		typeMap.new Type(StringData.class, "text");
+		typeMap.new Type(StringData.class, "txt");
 	}
 
 	public VariableMap getVariableMap() {
@@ -302,6 +307,11 @@ public class Evaluator {
 			} else if (c == '!') {
 				logicalNegation ^= logicalNegation;
 				castList.add(BooleanData.class);
+			} else if (c == '"') {
+				equation.skip();
+				term = Term.wrap(new StringData(parseString()));
+				equation.skip();
+				break;
 			} else if (c == '(') {// Nest
 				final ChainTerm<?> nest = parseNest(StandardWrapper.PARENTHESES);
 				if (nest == null)
@@ -450,6 +460,49 @@ public class Evaluator {
 			term = Term.not((Term<? extends Data<? extends Boolean>>) term);
 
 		return term;
+	}
+
+	/**
+	 * <p>
+	 * Starts where {@link #equation}'s {@link Spate#peek()} will return the first
+	 * character <b>inside</b> the string to be parsed.
+	 * <p>
+	 * Handles escaped quotations and escaped backslashes using backslashes as
+	 * escape chars.
+	 * 
+	 * @return The parse {@link String}.
+	 */
+	public String parseString() {
+		String string = "";
+		int c;
+		boolean escaped = false;
+		while (true) {
+			c = box(equation.peek());
+			if (c == '\\')
+				if (escaped) {
+					string += '\\';
+					escaped = false;
+				} else
+					escaped = true;
+			else if (c == '"')
+				if (escaped) {
+					string += '"';
+					escaped = false;
+				} else
+					break;
+			else if (c == -1)
+				throw new RuntimeException("No closing \" found while parsing a String.");
+			else {
+				if (escaped) {
+					string += '\\';
+					escaped = false;
+				}
+				string += (char) c;
+			}
+			equation.skip();
+		}
+
+		return string;
 	}
 
 	public static BigDecimal roundBigDecimal_old(String decimal) {
