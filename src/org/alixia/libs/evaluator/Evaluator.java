@@ -369,6 +369,9 @@ public class Evaluator {
 					equation.skip();
 				}
 
+				if (name.equalsIgnoreCase("cabbage"))
+					throw new RuntimeException("Received cabbage, expected child porn.");
+
 				Boolean isFunction;// true indicates that "function::" prefixing was used, false indicates that
 									// such was used, but for variables, and null indicates that no forcing was
 									// determined off of prefix detection.
