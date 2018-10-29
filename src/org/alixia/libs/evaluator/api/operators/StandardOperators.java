@@ -54,7 +54,8 @@ public enum StandardOperators implements NormalOperator, Precedented {
 			new Handle<>(ProbabilityData.class, (t, u) -> {
 				BigDecimal value = t.evaluate().add(u.toNumericData().evaluate());
 				return u instanceof ProbabilityData ? new ProbabilityData(value) : new NumericData(value);
-			})), 4);
+			})), 4),
+	EQUAL((t, u) -> new BooleanData(t.isEqualTo(u)), 3), NOT_EQUAL((t, u) -> new BooleanData(!t.isEqualTo(u)), 3);
 
 	public static BigInteger getFront(BigDecimal number) {
 		return number.toBigInteger();

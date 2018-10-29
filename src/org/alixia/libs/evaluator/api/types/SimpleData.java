@@ -19,4 +19,11 @@ public abstract class SimpleData<T> implements Data<T> {
 	public final String toString() {
 		return toStringValue();
 	}
+
+	@Override
+	public boolean isEqualTo(Data<?> other) {
+		return other instanceof SimpleData<?> ? value.equals(((SimpleData<?>) other).value)
+				: Data.super.isEqualTo(other);
+	}
+
 }

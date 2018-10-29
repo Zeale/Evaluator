@@ -11,6 +11,10 @@ package org.alixia.libs.evaluator.api.types;
  */
 public interface Data<T> {
 
+	default boolean isEqualTo(Data<?> other) {
+		return evaluate().equals(other.evaluate());
+	}
+
 	/**
 	 * <p>
 	 * <b>ALL subclasses should implement this method to return a {@link Data}

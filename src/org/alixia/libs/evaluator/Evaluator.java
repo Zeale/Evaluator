@@ -259,6 +259,8 @@ public class Evaluator {
 			if (equation.peek() == c)
 				equation.skip();
 			return OR;
+		} else if (c == '=') {
+			return EQUAL;
 		} else
 			throw new RuntimeException("Could not parse the operator, '" + (char) c + "'");
 	}
