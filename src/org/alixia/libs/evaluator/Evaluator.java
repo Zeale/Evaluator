@@ -260,7 +260,21 @@ public class Evaluator {
 				equation.skip();
 			return OR;
 		} else if (c == '=') {
+			if (equation.peek() == '=')
+				equation.skip();
 			return EQUAL;
+		} else if (c == '<') {
+			if (equation.peek() == '=') {
+				equation.skip();
+				return LESS_THAN_OR_EQUAL_TO;
+			} else
+				return LESS_THAN;
+		} else if (c == '>') {
+			if (equation.peek() == '=') {
+				equation.skip();
+				return GREATER_THAN_OR_EQUAL_TO;
+			} else
+				return GREATER_THAN;
 		} else
 			throw new RuntimeException("Could not parse the operator, '" + (char) c + "'");
 	}

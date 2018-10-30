@@ -55,7 +55,14 @@ public enum StandardOperators implements NormalOperator, Precedented {
 				BigDecimal value = t.evaluate().add(u.toNumericData().evaluate());
 				return u instanceof ProbabilityData ? new ProbabilityData(value) : new NumericData(value);
 			})), 4),
-	EQUAL((t, u) -> new BooleanData(t.isEqualTo(u)), 0), NOT_EQUAL((t, u) -> new BooleanData(!t.isEqualTo(u)), 0);
+	EQUAL((t, u) -> new BooleanData(t.isEqualTo(u)), 0), NOT_EQUAL((t, u) -> new BooleanData(!t.isEqualTo(u)), 0),
+	GREATER_THAN((t, u) -> new BooleanData(t.toNumericData().evaluate().compareTo(u.toNumericData().evaluate()) > 0),
+			0),
+	LESS_THAN((t, u) -> new BooleanData(t.toNumericData().evaluate().compareTo(u.toNumericData().evaluate()) < 0), 0),
+	GREATER_THAN_OR_EQUAL_TO(
+			(t, u) -> new BooleanData(t.toNumericData().evaluate().compareTo(u.toNumericData().evaluate()) >= 0), 0),
+	LESS_THAN_OR_EQUAL_TO(
+			(t, u) -> new BooleanData(t.toNumericData().evaluate().compareTo(u.toNumericData().evaluate()) <= 0), 0);
 
 	public static BigInteger getFront(BigDecimal number) {
 		return number.toBigInteger();
