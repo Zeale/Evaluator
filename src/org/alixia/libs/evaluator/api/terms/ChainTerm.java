@@ -120,8 +120,11 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 				final Chain<Term<T>, NormalOperator>.Pair pair = iterator.next();
 				if (pair.isLast())// Signifies that we are at the last Pair in the Chain.
 					break;
-				if (pair.getSecond() instanceof Precedented && ((Precedented) pair.getSecond()).precedence().equals(i))
+				if (pair.getSecond() instanceof Precedented
+						&& ((Precedented) pair.getSecond()).precedence().equals(i)) {
 					iterator.combineCurrentAndNextWithNormalOp(pair.getSecond());
+					iterator.skipBack();
+				}
 			}
 		// TODO Take care of non-precedented operators.
 		for (final MathChain.MathIterator iterator = chain.iterator(); iterator.hasNext();) {
@@ -129,6 +132,7 @@ public class ChainTerm<T extends Data<?>> implements Term<T> {
 			if (pair.isLast())
 				break;
 			iterator.combineCurrentAndNextWithNormalOp(pair.getSecond());
+			iterator.skipBack();
 		}
 
 		if (chain.size() != 1)
