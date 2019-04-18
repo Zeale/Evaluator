@@ -223,7 +223,6 @@ public class Evaluator {
 				break;
 			chain += (char) c;
 		}
-		System.out.println(chain);
 		return new Evaluator(Spate.spate(chain)).chain();
 	}
 
