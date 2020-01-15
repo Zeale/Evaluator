@@ -506,7 +506,7 @@ public class Evaluator {
 		for (int i = castList.size() - 1; i >= 0; i--)
 			term = Term.castTerm((Term<Data<?>>) term, (Class<Data<Object>>) castList.get(i));
 
-		if (box(equation.peek()) == '!') {
+		while (box(equation.peek()) == '!') {
 			equation.skip();
 			term = Term.factorial(term);
 		}
