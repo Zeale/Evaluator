@@ -362,7 +362,7 @@ public class Evaluator {
 				numericNegation ^= true;
 				castList.add(NumericData.class);
 			} else if (c == '!') {
-				logicalNegation ^= logicalNegation;
+				logicalNegation ^= true;
 				castList.add(BooleanData.class);
 			} else if (c == '"') {
 				equation.skip();
